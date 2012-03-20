@@ -5,11 +5,11 @@ A=10
 T=4
 P=0
 
-S=10000
-V=1000
+S=50000
+V=5000
 U=4
 A=100
-T=4
+T=6
 P=0
 
 javac Dataflow.java && java -Xmx1024M Dataflow $S $V $U $A $T $P

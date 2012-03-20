@@ -171,11 +171,9 @@ class Dataflow {
 		begin = System.nanoTime();
 		arr = (LinkedBlockingDeque<Vertex>[]) new LinkedBlockingDeque[nthread];
 
-		for (int j = 0; j < nthread; ++j) {
-			arr[j] = new LinkedBlockingDeque<Vertex>();
-		}
 
 		for (int j = 0; j < nthread; ++j) {
+			arr[j] = new LinkedBlockingDeque<Vertex>();
 			int startPos = (vertex.length * j) / nthread;
 			int endPos = (vertex.length * (j + 1)) / nthread;
 			for (; startPos < endPos; ++startPos) {
@@ -188,9 +186,12 @@ class Dataflow {
 			final int fk = k;
 			new Thread() {
 				public void run() {
-					Vertex u = arr[fk].remove();
-					u.listed = false;
-					u.computeIn(arr[fk]);
+					System.out.println("Thread-" + fk + " created, worklistsize: " + arr[fk].size());
+					while(arr[fk].size() > 0){
+						Vertex u = arr[fk].remove();
+						u.listed = false;
+						u.computeIn(arr[fk]);
+					}
 				}
 			}.start();
 		}
@@ -199,6 +200,13 @@ class Dataflow {
 		 * while (!worklist.isEmpty()) { u = worklist.remove(); u.listed =
 		 * false; u.computeIn(worklist); }
 		 */
+		for (int k = 0; k < nthread; ++k) {
+			while(arr[k].size() > 0){
+				try{
+					Thread.sleep(100);
+				} catch (Exception e) {}
+			}
+		}
 
 		end = System.nanoTime();
 
