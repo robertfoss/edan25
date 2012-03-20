@@ -119,7 +119,6 @@ class Dataflow {
 		int k;
 		int s; // number of successors of a vertex.
 
-		//System.out.println("generating CFG...");
 
 		connect(vertex[0], vertex[1]);
 		connect(vertex[0], vertex[2]);
@@ -138,8 +137,6 @@ class Dataflow {
 		int i;
 		int j;
 		int sym;
-
-		//System.out.println("generating usedefs...");
 
 		for (i = 0; i < vertex.length; ++i) {
 			for (j = 0; j < nactive; ++j) {
@@ -161,12 +158,10 @@ class Dataflow {
 		Vertex u;
 		Vertex v;
 		int i;
-		// LinkedBlockingDeque<Vertex>[] worklist;
 		long begin;
 		long end;
 		final LinkedBlockingDeque<Vertex>[] arr;
 
-		//System.out.println("computing liveness...");
 
 		begin = System.nanoTime();
 		arr = (LinkedBlockingDeque<Vertex>[]) new LinkedBlockingDeque[nthread];
@@ -196,10 +191,6 @@ class Dataflow {
 			}.start();
 		}
 
-		/*
-		 * while (!worklist.isEmpty()) { u = worklist.remove(); u.listed =
-		 * false; u.computeIn(worklist); }
-		 */
 		for (int k = 0; k < nthread; ++k) {
 			while(arr[k].size() > 0){
 				try{
@@ -210,7 +201,7 @@ class Dataflow {
 
 		end = System.nanoTime();
 
-		System.out.println("T = " + (end - begin) / 1e9 + " s");
+		System.out.println("T = " + (end - begin) / 1e9 + " s\n");
 	}
 
 	public static void main(String[] args) {
