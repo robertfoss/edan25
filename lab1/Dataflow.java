@@ -119,7 +119,7 @@ class Dataflow {
 		int k;
 		int s; // number of successors of a vertex.
 
-		System.out.println("generating CFG...");
+		//System.out.println("generating CFG...");
 
 		connect(vertex[0], vertex[1]);
 		connect(vertex[0], vertex[2]);
@@ -139,7 +139,7 @@ class Dataflow {
 		int j;
 		int sym;
 
-		System.out.println("generating usedefs...");
+		//System.out.println("generating usedefs...");
 
 		for (i = 0; i < vertex.length; ++i) {
 			for (j = 0; j < nactive; ++j) {
@@ -166,7 +166,7 @@ class Dataflow {
 		long end;
 		final LinkedBlockingDeque<Vertex>[] arr;
 
-		System.out.println("computing liveness...");
+		//System.out.println("computing liveness...");
 
 		begin = System.nanoTime();
 		arr = (LinkedBlockingDeque<Vertex>[]) new LinkedBlockingDeque[nthread];
@@ -233,10 +233,10 @@ class Dataflow {
 		nthread = Integer.parseInt(args[4]);
 		print = Integer.parseInt(args[5]) != 0;
 
-		System.out.println("nsym = " + nsym);
-		System.out.println("nvertex = " + nvertex);
-		System.out.println("maxsucc = " + maxsucc);
-		System.out.println("nactive = " + nactive);
+		//System.out.println("nsym = " + nsym);
+		//System.out.println("nvertex = " + nvertex);
+		//System.out.println("maxsucc = " + maxsucc);
+		//System.out.println("nactive = " + nactive);
 
 		if (nthread < 1) {
 			System.out.println("Invalid number of threads.");
