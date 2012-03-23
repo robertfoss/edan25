@@ -48,11 +48,14 @@ class Vertex {
 		Vertex v;
 		ListIterator<Vertex> iter;
 
-		iter = succ.listIterator();
 
+		iter = succ.listIterator();
+		
 		while (iter.hasNext()) {
 			v = iter.next();
-			out.or(v.in);
+			synchronized(v){
+				out.or(v.in);
+			}
 		}
 
 		old = in;
@@ -69,9 +72,11 @@ class Vertex {
 
 			while (iter.hasNext()) {
 				v = iter.next();
-				if (!v.listed) {
-					worklist.addLast(v);
-					v.listed = true;
+				synchronized(v){
+					if (!v.listed) {
+						worklist.addLast(v);
+						v.listed = true;
+					}
 				}
 			}
 		}
