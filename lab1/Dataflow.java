@@ -48,11 +48,14 @@ class Vertex {
 		Vertex v;
 		ListIterator<Vertex> iter;
 
-		iter = succ.listIterator();
 
+		iter = succ.listIterator();
+		
 		while (iter.hasNext()) {
 			v = iter.next();
-			out.or(v.in);
+			synchronized(v){
+				out.or(v.in);
+			}
 		}
 
 		old = in;
@@ -69,9 +72,11 @@ class Vertex {
 
 			while (iter.hasNext()) {
 				v = iter.next();
-				if (!v.listed) {
-					worklist.addLast(v);
-					v.listed = true;
+				synchronized(v){
+					if (!v.listed) {
+						worklist.addLast(v);
+						v.listed = true;
+					}
 				}
 			}
 		}
@@ -173,7 +178,7 @@ class Dataflow {
 			int endPos = (vertex.length * (j + 1)) / nthread;
 			for (; startPos < endPos; ++startPos) {
 				arr[j].addLast(vertex[startPos]);
-				vertex[startPos].listed = true;
+				vertex[startPos ].listed = true;
 			}
 		}
 
@@ -183,9 +188,11 @@ class Dataflow {
 				public void run() {
 					System.out.println("Thread-" + fk + " created, worklistsize: " + arr[fk].size());
 					while(arr[fk].size() > 0){
-						Vertex u = arr[fk].remove();
-						u.listed = false;
-						u.computeIn(arr[fk]);
+						Vertex u;
+						synchronized(u = arr[fk].remove()){
+							u.listed = false;
+							u.computeIn(arr[fk]);
+						}
 					}
 				}
 			}.start();
