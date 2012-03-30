@@ -6,15 +6,15 @@
 #P=0
 #javac Dataflow.java && java -Xmx2048M Dataflow $S $V $U $A $T $P
 
-S=10000
-V=1000
+S=100
+V=8
 U=4
-A=100
+A=10
 T=4
 P=1
-javac DataflowJonas.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > jonas.txt
-javac Dataflow.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > angelica.txt
-diff jonas.txt angelica.txt
+javac DataflowJonas.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > jonasinpt.txt
+#javac Dataflow.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > angelica.txt
+#diff jonas.txt angelica.txt
 
 #S=10000
 #V=1000

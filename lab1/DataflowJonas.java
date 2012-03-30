@@ -110,58 +110,59 @@ class Vertex {
 }
 
 class Dataflow {
+	private static boolean output_input = false;
 
-	public static void connect(Vertex pred, Vertex succ)
-	{
+	public static void connect(Vertex pred, Vertex succ) {
 		pred.succ.addLast(succ);
 		succ.pred.addLast(pred);
 	}
 
-	public static void generateCFG(Vertex vertex[], int maxsucc, Random r)
-	{
-		int	i;
-		int	j;
-		int	k;
-		int	s;	// number of successors of a vertex.
+	public static void generateCFG(Vertex vertex[], int maxsucc, Random r) {
+		int i;
+		int j;
+		int k;
+		int s; // number of successors of a vertex.
 
-		System.out.println("generating CFG...");
 
 		connect(vertex[0], vertex[1]);
 		connect(vertex[0], vertex[2]);
-		
+
 		for (i = 2; i < vertex.length; ++i) {
+			if(output_input) System.out.print("[" + i + "] succ = {");
 			s = (r.nextInt() % maxsucc) + 1;
 			for (j = 0; j < s; ++j) {
 				k = Math.abs(r.nextInt()) % vertex.length;
+				if(output_input) System.out.print(" " + k);
 				connect(vertex[i], vertex[k]);
 			}
+			if(output_input) System.out.print("}\n");
 		}
 	}
 
-	public static void generateUseDef(	
-		Vertex	vertex[],
-		int	nsym,
-		int	nactive,
-		Random	r)
-	{
-		int	i;
-		int	j;
-		int	sym;
-
-		System.out.println("generating usedefs...");
+	public static void generateUseDef(Vertex vertex[], int nsym, int nactive,
+			Random r) {
+		int i;
+		int j;
+		int sym;
 
 		for (i = 0; i < vertex.length; ++i) {
+			if(output_input) System.out.print("[" + i + "] usedef = {");
 			for (j = 0; j < nactive; ++j) {
 				sym = Math.abs(r.nextInt()) % nsym;
 
 				if (j % 4 != 0) {
-					if (!vertex[i].def.get(sym))
+					if (!vertex[i].def.get(sym)){
+						if(output_input) System.out.print(" u " + sym);
 						vertex[i].use.set(sym);
+					}
 				} else {
-					if (!vertex[i].use.get(sym))
+					if (!vertex[i].use.get(sym)){
+						if(output_input) System.out.print(" d " + sym);
 						vertex[i].def.set(sym);
+					}
 				}
 			}
+			if(output_input) System.out.print("}\n");
 		}
 	}
 
@@ -174,7 +175,7 @@ class Dataflow {
 		long			begin;
 		long			end;
 
-		System.out.println("computing liveness...");
+		//System.out.println("computing liveness...");
 
 		begin = System.nanoTime();
 		worklist = new LinkedList<Vertex>();
@@ -191,7 +192,7 @@ class Dataflow {
 		}
 		end = System.nanoTime();
 
-		System.out.println("T = " + (end-begin)/1e9 + " s");
+		//System.out.println("T = " + (end-begin)/1e9 + " s");
 	}
 
 	public static void main(String[] args)
@@ -215,10 +216,10 @@ class Dataflow {
 		nthread = Integer.parseInt(args[4]);
 		print = Integer.parseInt(args[5]) != 0;
 	
-		System.out.println("nsym = " + nsym);
+		/*System.out.println("nsym = " + nsym);
 		System.out.println("nvertex = " + nvertex);
 		System.out.println("maxsucc = " + maxsucc);
-		System.out.println("nactive = " + nactive);
+		System.out.println("nactive = " + nactive);*/
 
 		vertex = new Vertex[nvertex];
 

@@ -112,6 +112,7 @@ class Vertex {
 }
 
 class Dataflow {
+	private boolean output_input = true;
 
 	public static void connect(Vertex pred, Vertex succ) {
 		pred.succ.addLast(succ);
@@ -129,11 +130,14 @@ class Dataflow {
 		connect(vertex[0], vertex[2]);
 
 		for (i = 2; i < vertex.length; ++i) {
+			System.out.print("[" + i + "] succ = {");
 			s = (r.nextInt() % maxsucc) + 1;
 			for (j = 0; j < s; ++j) {
 				k = Math.abs(r.nextInt()) % vertex.length;
+				if(output_input) System.out.print(" " + k);
 				connect(vertex[i], vertex[k]);
 			}
+			System.out.print("}\n");
 		}
 	}
 
@@ -144,17 +148,23 @@ class Dataflow {
 		int sym;
 
 		for (i = 0; i < vertex.length; ++i) {
+			System.out.print("[" + i + "] usedef = {");
 			for (j = 0; j < nactive; ++j) {
 				sym = Math.abs(r.nextInt()) % nsym;
 
 				if (j % 4 != 0) {
-					if (!vertex[i].def.get(sym))
+					if (!vertex[i].def.get(sym)){
+						if(output_input) System.out.print(" u " + sym);
 						vertex[i].use.set(sym);
+					}
 				} else {
-					if (!vertex[i].use.get(sym))
+					if (!vertex[i].use.get(sym)){
+						if(output_input) System.out.print(" u " + sym);
 						vertex[i].def.set(sym);
+					}
 				}
 			}
+			if(output_input) System.out.print("}\n");
 		}
 	}
 

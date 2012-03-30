@@ -3,7 +3,6 @@ import scala.actors.Actor._
 import scala.util._
 import java.util.BitSet;
 //import java.util.Thread;
-
 // LAB 6: some case classes but you need additional ones too.
 case class Start();
 case class Stop();
@@ -11,8 +10,8 @@ case class Ready();
 case class CheckIfRepeat();
 case class GetInBitSet(v: Vertex);
 case class GiveInBitSet(in: BitSet);
-case class ActQueued();
-case class ActDone();
+case class ActQueued(index: Int);
+case class ActDone(index: Int);
 case class Go();
 case class GoContinue();
 case class ChangeInBitSet(in: BitSet);	// might be useful...
@@ -38,14 +37,14 @@ class Controller(val cfg: Array[Vertex]) extends Actor {
         act();
       }
 
-      case ActQueued() => {
+      case ActQueued(index: Int) => {
         runningActors += 1;
-        //println("Controller: ActQueued()\trunningActors: " + runningActors);
+        println(index + ": Controller: ActQueued()\trunningActors: " + runningActors);
         act();
       }
-      case ActDone() => {
+      case ActDone(index: Int) => {
         runningActors -= 1;
-        //println("Controller: ActDone()\taas: " + allActorsStarted + "\trunningActors: " + runningActors);
+        println(index + ": Controller: ActDone()\taas: " + allActorsStarted + "\trunningActors: " + runningActors);
         if (runningActors == 0 && allActorsStarted){
           for (u <- cfg){
               u ! new Stop;
@@ -69,6 +68,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
   val out                 = new BitSet(s);
   var in                  = new BitSet(s);
   var old                 = new BitSet(s);
+  var debug = true;
   var outQuery = 0;
 
   def connect(that: Vertex)
@@ -79,30 +79,30 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
   }
 
   def print() {  
-      var i = 0;
+    var i = 0;
 
-		  System.out.print("use[" + index + "] = { ");
-		  for (i <- 0 until uses.size())
-			  if (uses.get(i))
-				  System.out.print("" + i + " ");
-		  System.out.println("}");
-		  System.out.print("def[" + index + "] = { ");
-		  for (i <- 0 until defs.size())
-			  if (defs.get(i))
-				  System.out.print("" + i + " ");
-		  System.out.println("}\n");
+    System.out.print("use[" + index + "] = { ");
+    for (i <- 0 until uses.size())
+      if (uses.get(i))
+        System.out.print("" + i + " ");
+    System.out.println("}");
+    System.out.print("def[" + index + "] = { ");
+    for (i <- 0 until defs.size())
+      if (defs.get(i))
+        System.out.print("" + i + " ");
+    System.out.println("}\n");
 
-		  System.out.print("in[" + index + "] = { ");
-		  for (i <- 0 until in.size())
-			  if (in.get(i))
-				  System.out.print("" + i + " ");
-		  System.out.println("}");
+    System.out.print("in[" + index + "] = { ");
+    for (i <- 0 until in.size())
+      if (in.get(i))
+        System.out.print("" + i + " ");
+    System.out.println("}");
 
-		  System.out.print("out[" + index + "] = { ");
-		  for (i <- 0 until out.size())
-			  if (out.get(i))
-				  System.out.print("" + i + " ");
-		  System.out.println("}\n");
+    System.out.print("out[" + index + "] = { ");
+    for (i <- 0 until out.size())
+      if (out.get(i))
+        System.out.print("" + i + " ");
+    System.out.println("}\n");
   }
 
   def act() {
@@ -110,7 +110,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
       case Start() => {
         // Tell controller we are ready to go.
         controller ! new Ready;
-        //println(index + ": Start()");
+        if(debug) println(index + ": Start()");
 
         this ! CheckIfRepeat();
 
@@ -118,34 +118,39 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
       }
 
         case CheckIfRepeat() => {
-          //println(index + ": CheckIfRepeat()");
+          if(debug) println(index + ": CheckIfRepeat()");
           if (!listed) {
               listed = true;
-              controller ! ActQueued();
+              controller ! ActQueued(index);
               this ! Go();
           }
           act();
         }
 
         case Go() => {
-          //println(index + ": Go()");
+          if(debug) println(index + ": Go()");
           var v: Vertex = null;
           
           succ.foreach{ v =>
             outQuery += 1;
             v ! GetInBitSet(this);
           }
+          if(succ.length == 0){
+		        if(debug) println(index + ": Go(), No successors.");
+            outQuery = 1;
+            self ! GiveInBitSet(new BitSet());
+          }
           act();
         }
 
         case GetInBitSet(v: Vertex) => {
-          //println(index + ": GetInBitSet()");
+          if(debug) println(index + ": GetInBitSet()");
           v ! GiveInBitSet(in);
           act();
         }
 
         case GiveInBitSet(in: BitSet) => {
-          //println(index + ": GiveInBitSet()\tOutQuery: " + (outQuery-1));
+          if(debug) println(index + ": GiveInBitSet()\tOutQuery: " + (outQuery-1));
           out.or(in);
           outQuery -= 1;
           if (outQuery == 0){
@@ -156,7 +161,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
         }
 
         case GoContinue() => {
-          //println(index + ": GoContinue()");
+          if(debug) println(index + ": GoContinue()");
           old = in;
 
 
@@ -174,7 +179,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
           }
           //println(index + ": GoContinue()\tforeach done..");
           listed = false;
-          controller ! ActDone();
+          controller ! ActDone(index);
           act();
         }
 
@@ -185,39 +190,62 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
   }
 }
 
+class Randoms(val seed: Int){
+	var w = seed + 1;
+	var z = seed * seed + seed + 2;
+
+	def nextInt() = {
+		z = 36969 * (z & 65535) + (z >> 16);
+		w = 18000 * (w & 65535) + (w >> 16);
+
+		((z << 16) + w);
+	}
+}
+
+
 object Driver {
-  val rand    = new Random(1);
+  val rand    = new Randoms(1);
   var nactive = 0;
   var nsym    = 0;
   var nvertex = 0;
   var maxsucc = 0;
+  var output_input = false;
 
-  def makeCFG(cfg: Array[Vertex], nsucc: Array[Int]) {
+  def makeCFG(cfg: Array[Vertex], maxsucc: Int) {
 
     cfg(0).connect(cfg(1));
     cfg(0).connect(cfg(2));
 
     for (i <- 2 until cfg.length) {
+      if(output_input) print("[" + i + "] succ = {");
       val p = cfg(i);
-      for (j <- 0 until nsucc(i)) {
-        val s = cfg((rand.nextInt() % cfg.length).abs);
+      val q = (rand.nextInt() % maxsucc) + 1;
+      for (j <- 0 until q) {
+        val num = (rand.nextInt() % cfg.length).abs;
+        val s = cfg(num);
+        if(output_input) print(" " + num);
         p.connect(s);
       }
+      if(output_input) print("}\n");
     }
   }
 
   def makeUseDef(cfg: Array[Vertex]) {
     for (i <- 0 until cfg.length) {
+      if(output_input) print("[" + i + "] usedef = {");
       for (j <- 0 until nactive) {
         val s = (rand.nextInt() % nsym).abs;
         if (j % 4 != 0) {
           if (!cfg(i).defs.get(s))
+            if(output_input) print(" u " + s);
             cfg(i).uses.set(s);
         } else {
           if (!cfg(i).uses.get(s))
+            if(output_input) print(" d " + s);
             cfg(i).defs.set(s);
         }
       }
+      if(output_input) print("}\n");
     }
   }
 
@@ -226,25 +254,25 @@ object Driver {
     nvertex        = args(1).toInt;
     maxsucc        = args(2).toInt;
     nactive        = args(3).toInt;
-    var print	     = false;
+    var print	     = true;
     val cfg        = new Array[Vertex](nvertex);
-    val nsucc      = new Array[Int](nvertex);
+    //val nsucc      = new Array[Int](nvertex);
     val controller = new Controller(cfg);
 
     controller.start;
 
     for (i <- 0 until nvertex) {
-      nsucc(i) = (rand.nextInt() % maxsucc).abs;
+      //nsucc(i) = (rand.nextInt() % maxsucc).abs;
       cfg(i) = new Vertex(i, nsym, controller);
     }
 
-    nsucc(0) = 2;
-    nsucc(1) = 0;
+    //nsucc(0) = 2;
+    //nsucc(1) = 0;
 
-    makeCFG(cfg, nsucc);
+    makeCFG(cfg, maxsucc);
     makeUseDef(cfg);
 
-    println("starting " + nvertex + " actors...");
+    //println("starting " + nvertex + " actors...");
 
     for (i <- 0 until nvertex)
       cfg(i).start;
@@ -256,7 +284,7 @@ object Driver {
       Thread.sleep(500);
       //println("main: Controller not stopped.");
     }
-    println("main: Controller stopped!½!");
+    //println("main: Controller stopped!½!");
   
 
     if (print)
