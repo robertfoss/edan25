@@ -110,7 +110,12 @@ class Vertex {
 }
 
 class Dataflow {
-	private static boolean output_input = false;
+
+	private static boolean output_input;
+	
+	public Dataflow(boolean print_input){
+		output_input = print_input;
+	}
 
 	public static void connect(Vertex pred, Vertex succ) {
 		pred.succ.addLast(succ);
@@ -203,7 +208,9 @@ class Dataflow {
 		int	maxsucc;
 		int	nactive;
 		int	nthread;
-		boolean	print;
+		boolean	print_output;
+		boolean print_input;
+		boolean print_debug;
 		Vertex	vertex[];
 		Random	r;
 
@@ -214,7 +221,9 @@ class Dataflow {
 		maxsucc = Integer.parseInt(args[2]);
 		nactive = Integer.parseInt(args[3]);
 		nthread = Integer.parseInt(args[4]);
-		print = Boolean.valueOf(args[5]).booleanValue();
+		print_output = Boolean.valueOf(args[5]).booleanValue();
+		print_input = Boolean.valueOf(args[6]).booleanValue();
+		print_debug = Boolean.valueOf(args[7]).booleanValue();
 	
 		/*System.out.println("nsym = " + nsym);
 		System.out.println("nvertex = " + nvertex);
@@ -226,11 +235,13 @@ class Dataflow {
 		for (i = 0; i < vertex.length; ++i)
 			vertex[i] = new Vertex(i);
 
+
+		new Dataflow(print_input); // Needed to set static variables
 		generateCFG(vertex, maxsucc, r);
 		generateUseDef(vertex, nsym, nactive, r);
 		liveness(vertex);
 
-		if (print)
+		if (print_output)
 			for (i = 0; i < vertex.length; ++i)
 				vertex[i].print();
 	}

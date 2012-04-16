@@ -17,7 +17,7 @@ case class GoContinue();
 case class ChangeInBitSet(in: BitSet);	// might be useful...
 
 
-class Controller(val cfg: Array[Vertex]) extends Actor {
+class Controller(val cfg: Array[Vertex], print_debug: Boolean) extends Actor {
   var started = 0;
   var begin   = System.currentTimeMillis();
   var runningActors = 0;
@@ -39,12 +39,12 @@ class Controller(val cfg: Array[Vertex]) extends Actor {
 
       case ActQueued(index: Int) => {
         runningActors += 1;
-        println(index + ": Controller: ActQueued()\trunningActors: " + runningActors);
+        if (print_debug) println(index + ": Controller: ActQueued()\trunningActors: " + runningActors);
         act();
       }
       case ActDone(index: Int) => {
         runningActors -= 1;
-        println(index + ": Controller: ActDone()\taas: " + allActorsStarted + "\trunningActors: " + runningActors);
+        if (print_debug) println(index + ": Controller: ActDone()\taas: " + allActorsStarted + "\trunningActors: " + runningActors);
         if (runningActors == 0 && allActorsStarted){
           for (u <- cfg){
               u ! new Stop;
@@ -59,7 +59,7 @@ class Controller(val cfg: Array[Vertex]) extends Actor {
   } 
 }
 
-class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
+class Vertex(val index: Int, s: Int, val controller: Controller, print_debug: Boolean) extends Actor {
   var pred: List[Vertex]  = List();
   var succ: List[Vertex]  = List();
   var listed              = false;
@@ -68,7 +68,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
   val out                 = new BitSet(s);
   var in                  = new BitSet(s);
   var old                 = new BitSet(s);
-  var debug = false;
+  var debug = print_debug;
   var outQuery = 0;
 
   def connect(that: Vertex)
@@ -209,68 +209,68 @@ object Driver {
   var nsym    = 0;
   var nvertex = 0;
   var maxsucc = 0;
-  var output_input = false;
 
-  def makeCFG(cfg: Array[Vertex], maxsucc: Int) {
-
-    cfg(0).connect(cfg(1));
+  def makeCFG(cfg: Array[Vertex], maxsucc: Int, print_input: Boolean) {
+  	cfg(0).connect(cfg(1));
     cfg(0).connect(cfg(2));
 
     for (i <- 2 until cfg.length) {
-      if(output_input) print("[" + i + "] succ = {");
+      if(print_input) print("[" + i + "] succ = {");
       val p = cfg(i);
       val q = (rand.nextInt() % maxsucc) + 1;
       for (j <- 0 until q) {
         val num = (rand.nextInt() % cfg.length).abs;
         val s = cfg(num);
-        if(output_input) print(" " + num);
+        if(print_input) print(" " + num);
         p.connect(s);
       }
-      if(output_input) print("}\n");
+      if(print_input) print("}\n");
     }
   }
 
-  def makeUseDef(cfg: Array[Vertex]) {
+  def makeUseDef(cfg: Array[Vertex], print_input: Boolean) {
     for (i <- 0 until cfg.length) {
-      if(output_input) print("[" + i + "] usedef = {");
+      if(print_input) print("[" + i + "] usedef = {");
       for (j <- 0 until nactive) {
         val s = (rand.nextInt() % nsym).abs;
         if (j % 4 != 0) {
           if (!cfg(i).defs.get(s))
-            if(output_input) print(" u " + s);
+            if(print_input) print(" u " + s);
             cfg(i).uses.set(s);
         } else {
           if (!cfg(i).uses.get(s))
-            if(output_input) print(" d " + s);
+            if(print_input) print(" d " + s);
             cfg(i).defs.set(s);
         }
       }
-      if(output_input) print("}\n");
+      if(print_input) print("}\n");
     }
   }
 
   def main(args: Array[String]) {
-    nsym           = args(0).toInt;
-    nvertex        = args(1).toInt;
-    maxsucc        = args(2).toInt;
-    nactive        = args(3).toInt;
-    var print	   = args(4).toBoolean;
-    val cfg        = new Array[Vertex](nvertex);
-    //val nsucc      = new Array[Int](nvertex);
-    val controller = new Controller(cfg);
+    nsym           	= args(0).toInt;
+    nvertex        	= args(1).toInt;
+    maxsucc        	= args(2).toInt;
+    nactive        	= args(3).toInt;
+    var print_output= args(4).toBoolean;
+    var print_input	= args(5).toBoolean;
+    var print_debug	= args(6).toBoolean;
+    val cfg        	= new Array[Vertex](nvertex);
+    //val nsucc       = new Array[Int](nvertex);
+    val controller 	= new Controller(cfg, print_debug);
 
     controller.start;
 
     for (i <- 0 until nvertex) {
       //nsucc(i) = (rand.nextInt() % maxsucc).abs;
-      cfg(i) = new Vertex(i, nsym, controller);
+      cfg(i) = new Vertex(i, nsym, controller, print_debug);
     }
 
     //nsucc(0) = 2;
     //nsucc(1) = 0;
 
-    makeCFG(cfg, maxsucc);
-    makeUseDef(cfg);
+    makeCFG(cfg, maxsucc, print_input);
+    makeUseDef(cfg, print_input);
 
     //println("starting " + nvertex + " actors...");
 
@@ -287,12 +287,13 @@ object Driver {
     //println("main: Controller stopped!½!");
   
 
-    if (print)
+    if (print_output){
       for (i <- 0 until nvertex)
         cfg(i).print();
 
-    var sec = ((controller.end) - (controller.begin))/1000;
-    var ms = ((controller.end-controller.begin)%1000);
-    println("Runtime: " +sec + "." + ms); 
+      var sec = ((controller.end) - (controller.begin))/1000;
+      var ms = ((controller.end-controller.begin)%1000);
+      println("Runtime: " +sec + "." + ms);
+      }
     }
 }
