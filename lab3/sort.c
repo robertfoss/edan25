@@ -8,9 +8,14 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+typedef struct timeval tv;
+
+
+
 static double sec(void)
 {
-	return 0;
+	
+	return (double) time(NULL);;
 }
 
 void par_sort(
