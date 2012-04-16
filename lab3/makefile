@@ -11,6 +11,7 @@ all: sort
 # The variable $@ has the value of the target. In this case $@ = psort
 sort: sort.o ${OBJS}
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ sort.o ${LIBS}
+	./sort
 
 
 .c.o:
