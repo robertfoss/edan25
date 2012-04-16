@@ -1,1 +1,9 @@
 The purpose of the course is that the students should use knowledge from the course EDAF15 Algorithm Implementation when writing software for multicores, ie to learn how to implement an algorithm as efficiently as possible on a particular multicore computer, both on a traditional multiprocessor with shared memory, and on multicores where communication is handled explicitly by software, e.g. as with DMA on the Cell processor, and to understand advantages and disadvantages of these two multicore architectures.
+
+Folders:
+lab1 	Parallelizing the Java version of the Dataflow Analysis code.
+lab2 	Dataflow Analysis in Scala with Actors.
+lab3 	Introduction to C and Pthreads.
+lab4 	Dataflow Analysis with C and Pthreads.
+lab5 	Introduction to the Cell Architecture.
+lab6	Dataflow Analysis on the Cell Architecture.
