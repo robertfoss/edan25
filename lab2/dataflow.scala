@@ -68,7 +68,7 @@ class Vertex(val index: Int, s: Int, val controller: Controller) extends Actor {
   val out                 = new BitSet(s);
   var in                  = new BitSet(s);
   var old                 = new BitSet(s);
-  var debug = true;
+  var debug = false;
   var outQuery = 0;
 
   def connect(that: Vertex)
@@ -254,7 +254,7 @@ object Driver {
     nvertex        = args(1).toInt;
     maxsucc        = args(2).toInt;
     nactive        = args(3).toInt;
-    var print	     = true;
+    var print	   = args(4).toBoolean;
     val cfg        = new Array[Vertex](nvertex);
     //val nsucc      = new Array[Int](nvertex);
     val controller = new Controller(cfg);
