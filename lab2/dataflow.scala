@@ -236,13 +236,15 @@ object Driver {
       for (j <- 0 until nactive) {
         val s = (rand.nextInt() % nsym).abs;
         if (j % 4 != 0) {
-          if (!cfg(i).defs.get(s))
+          if (!cfg(i).defs.get(s)){
             if(output_input) print(" u " + s);
             cfg(i).uses.set(s);
+          }
         } else {
-          if (!cfg(i).uses.get(s))
+          if (!cfg(i).uses.get(s)){
             if(output_input) print(" d " + s);
             cfg(i).defs.set(s);
+          }
         }
       }
       if(output_input) print("}\n");
