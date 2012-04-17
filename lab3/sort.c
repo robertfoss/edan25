@@ -1,4 +1,4 @@
-h#include <assert.h>
+#include <assert.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -113,7 +113,9 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 
 static double sec(void)
 {
-	return (double) time(NULL);
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double) tv.tv_sec +  (double)tv.tv_usec / 1000000;
 }
 
 void par_sort(
@@ -194,8 +196,9 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
-	printf("\nqsort: \t\t\tTook %1.2f seconds..\n", (double) end-start);
- 	printf("parallel mergsort: \tTook %1.2f seconds..\n", (double) end2-start2);
+	printf("Sorting %d elements.\n", n);
+	printf("\nqsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
+ 	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
 
 	return 0;
 }
