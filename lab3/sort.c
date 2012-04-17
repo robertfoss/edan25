@@ -54,37 +54,34 @@ void recur(void* rs_in)
 	int status = -111;
 		
 	//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp);
-	recur_struct rs_new;
-	rs_new.buf 						= rs.tmp + l;
-	rs_new.tmp 						= rs.buf + l;
-	rs_new.len 						= rs.len - l;
-	rs_new.recursion_depth 			= rs.recursion_depth + 1;
-	rs_new.max_thread_split_depth 	= rs.max_thread_split_depth;
-	rs_new.cmp						= rs.cmp;
+	recur_struct* rs_new = (recur_struct*) malloc(sizeof(recur_struct));
+	rs_new->buf 						= rs.tmp + l;
+	rs_new->tmp 						= rs.buf + l;
+	rs_new->len 						= rs.len - l;
+	rs_new->recursion_depth 			= rs.recursion_depth + 1;
+	rs_new->max_thread_split_depth 	= rs.max_thread_split_depth;
+	rs_new->cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		printf("Creating new thread at depth: %d\n", rs.recursion_depth);
-		///*
-		status = pthread_create( &thread, NULL, recur, &rs_new);
+		status = pthread_create( &thread, NULL, recur, rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
-		}//*/
+		}
 	} else {
-		recur((void*) &rs_new);	
+		recur((void*) rs_new);	
 	}
-	//recur( (void*) &rs_new); /
 	
 
 	//recur(tmp, buf, l, ++recursion_depth, max_thread_split_depth);
-	recur_struct rs_new2;
-	rs_new2.tmp = rs.buf;
-	rs_new2.buf = rs.tmp;
-	rs_new2.len = l;
-	rs_new2.recursion_depth = rs.recursion_depth + 1;
-	rs_new2.max_thread_split_depth = rs.max_thread_split_depth;
-	rs_new2.cmp = rs.cmp;
-	recur((void*) &rs_new2);
+	recur_struct* rs_new2 = (recur_struct*) malloc(sizeof(recur_struct));
+	rs_new2->tmp = rs.buf;
+	rs_new2->buf = rs.tmp;
+	rs_new2->len = l;
+	rs_new2->recursion_depth = rs.recursion_depth + 1;
+	rs_new2->max_thread_split_depth = rs.max_thread_split_depth;
+	rs_new2->cmp = rs.cmp;
+	recur((void*) rs_new2);
 	
 	
 	if (status != -111){
@@ -92,6 +89,8 @@ void recur(void* rs_in)
 	}
  
 	merge(rs.tmp, l, rs.tmp + l, rs.len - l, rs.buf, rs.cmp);
+	free(rs_new);
+	free(rs_new2);
 }
  
 /* preparation work before recursion */
@@ -138,10 +137,11 @@ static int cmp(const void* ap, const void* bp)
 
 int main(int ac, char** av)
 {
-	int		n = 20000000;
-	int		i;
+	int			n = 20000000;
+	int			i;
 	double*		a;
 	double		start, end;
+	double 		start2,end2;
 
 	if (ac > 1)
 		sscanf(av[1], "%d", &n);
@@ -152,41 +152,37 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++)
 		a[i] = rand();
 
+	printf("qsort:ing...");
+	fflush(stdout);
 	start = sec();
-
-#ifdef PARALLEL
-	par_sort(a, n, sizeof a[0], cmp);
-#else
 	qsort(a, n, sizeof a[0], cmp);
-#endif
-
 	end = sec();
+	printf(" done!\n");
 
-	printf("#1: Took %1.2f seconds..\n", (double) end-start);
-	//printf("%1.2f s\n", end - start);
 
-	free(a);
-	
+	 
 	srand(getpid());
-	double x[n];
- 
 	for (i = 0; i < n; i++)
-		x[i] = rand();
+		a[i] = rand();
  
 	/*puts("before sort:");
 	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
 	putchar('\n');*/
-	double start2,end2;
+	
+	printf("Parallel mergesorting...");
+	fflush(stdout);
 	start2 = sec();
-	merge_sort(x, n, sizeof(x[0]), cmp);
+	merge_sort(a, n, sizeof(a[0]), cmp);
  	end2 = sec();
+ 	printf(" done!\n");
  	
 	/*puts("after sort:");
 	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
 	putchar('\n');*/
- 	printf("#2: Took %1.2f seconds..\n", (double) end2-start2);
- 	printf("find_recursion_depth %d\n", find_recursion_depth(4));
-
+	
+	printf("\nqsort: \t\t\tTook %1.2f seconds..\n", (double) end-start);
+ 	printf("parallel mergsort: \tTook %1.2f seconds..\n", (double) end2-start2);
 
 	return 0;
 }
+
