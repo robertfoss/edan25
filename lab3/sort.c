@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#define NTHREADS 4
+#define NTHREADS 5
 
 
 inline

@@ -1,7 +1,6 @@
-CFLAGS = -g -Wall
-
+CFLAGS = -g -Wall -O2
 CC = gcc
-LIBS =  -lpthread  -lm -mnative
+LIBS =  -lpthread  -lm
 INCLUDES =
 SRCS = sort.c
 
@@ -11,11 +10,7 @@ all: sort
 # The variable $@ has the value of the target. In this case $@ = psort
 sort: sort.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ sort.o ${LIBS}
-	#./sort
-	
-merge: mergesort.o
-	${CC} ${CFLAGS} ${INCLUDES} -o $@ mergesort.o ${LIBS}
-	./merge
+        ./sort
 
 
 .c.o:
