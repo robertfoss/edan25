@@ -17,7 +17,7 @@ inline
 unsigned int find_recursion_depth(unsigned int x)
 {
 	
-	return (unsigned int) (ceil (log( (double) x ) / log( 2.0 ))   );
+	return (unsigned int) (ceil (log( (double) x ) / log( 2.0 ))  ) -1;
 }
 
  
@@ -53,6 +53,7 @@ void recur(void* rs_in)
  	pthread_t thread;
 	int status = -111;
 		
+	//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp);
 	recur_struct rs_new;
 	rs_new.buf 						= rs.tmp +l;
 	rs_new.tmp 						= rs.buf + l;
@@ -62,27 +63,28 @@ void recur(void* rs_in)
 	rs_new.cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		/*
+		printf("Creating new thread at depth: %d\n", rs.recursion_depth);
+		///*
 		status = pthread_create( &thread, NULL, recur, &rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
-		}*/
-		//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp); //Splitsings!
+		}//*/
 	} else {
-		//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp);	
+		recur((void*) &rs_new);	
 	}
-		recur( (void*) &rs_new);
+	//recur( (void*) &rs_new); /
 	
-	
-	double* tmp_var = rs.tmp;	
-	rs.tmp = rs.buf;
-	rs.buf = tmp_var;
-	rs.len = l;
-	rs.recursion_depth = rs.recursion_depth + 1;
-	//rs.max_thread_split_depth;
-	//rs.cmp;
-	recur((void*) &rs);
+
+	//recur(tmp, buf, l, ++recursion_depth, max_thread_split_depth);
+	recur_struct rs_new2;
+	rs_new2.tmp = rs.buf;
+	rs_new2.buf = rs.tmp;
+	rs_new2.len = l;
+	rs_new2.recursion_depth = rs.recursion_depth + 1;
+	rs_new2.max_thread_split_depth = rs.max_thread_split_depth;
+	rs_new2.cmp = rs.cmp;
+	recur((void*) &rs_new2);
 	
 	
 	if (status != -111){
@@ -165,22 +167,24 @@ int main(int ac, char** av)
 	free(a);
 	
 	
-	#	define LEN 20
+	#	define LEN 200000
 	double x[LEN];
  
 	for (i = 0; i < LEN; i++)
 		x[i] = rand() % LEN;
  
 	puts("before sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
-	putchar('\n');
- 
+	//for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	//putchar('\n');
+	double start2,end2;
+	start2 = sec();
 	merge_sort(x, LEN, sizeof(x[0]), cmp);
- 
-	puts("after sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
-	putchar('\n');
+ 	end2 = sec();
  	
+	puts("after sort:");
+	//for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	//putchar('\n');
+ 	printf("Took %d seconds..", (double) end2-start2);
  	printf("round power-2 %d\n", find_recursion_depth(5));
 
 
