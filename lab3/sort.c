@@ -11,7 +11,6 @@
 #include <math.h>
 
 static unsigned int nbr_threads;
-double 		start2;
 
 inline
 unsigned int find_recursion_depth(unsigned int x)
