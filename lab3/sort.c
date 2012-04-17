@@ -16,17 +16,15 @@
 inline
 unsigned int find_recursion_depth(unsigned int x)
 {
-	
 	return (unsigned int) (floor (log( (double) x ) / log( 2.0 ))  );
 }
 
- 
 inline
 void merge(double *left, int l_len, double *right, int r_len, double *out, int (*cmp)(const void *, const void *))
 {
 	int i, j, k;
 	for (i = j = k = 0; i < l_len && j < r_len; ){
-		out[k++] = cmp((void*) &left[i], (void*) &right[j]) ? left[i++] : right[j++];
+		out[k++] = cmp((void*) &left[i], (void*) &right[j]) ? right[j++] : left[i++];
 	}
  
 	while (i < l_len) out[k++] = left[i++];
@@ -72,7 +70,6 @@ void recur(void* rs_in)
 	} else {
 		recur((void*) rs_new);	
 	}
-	
 
 	//recur(tmp, buf, l, ++recursion_depth, max_thread_split_depth);
 	recur_struct* rs_new2 = (recur_struct*) malloc(sizeof(recur_struct));
@@ -114,10 +111,8 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 	free(tmp);
 }
 
-
 static double sec(void)
 {
-	
 	return (double) time(NULL);
 }
 
@@ -132,7 +127,6 @@ void par_sort(
 static int cmp(const void* ap, const void* bp)
 {	
 	/* you need to modify this function to compare doubles. */
-
 	return ((*(double*) ap) < (*(double*) bp)); 
 }
 
@@ -141,6 +135,7 @@ int main(int ac, char** av)
 	int			n = 20000000;
 	int			i;
 	double*		a;
+	double*		b;
 	double		start, end;
 	double 		start2,end2;
 
@@ -150,8 +145,15 @@ int main(int ac, char** av)
 	srand(getpid());
 
 	a = malloc(n * sizeof a[0]);
-	for (i = 0; i < n; i++)
+	b = malloc(n * sizeof b[0]);
+	for (i = 0; i < n; i++){
 		a[i] = rand();
+		b[i] = a[i];
+	}
+
+	/*puts("before:");
+	for (i = 0; i < n; i++) printf("%1.0f\t%1.0f\n", a[i], b[i]);
+	putchar('\n');*/
 
 	printf("qsort:ing...");
 	fflush(stdout);
@@ -159,12 +161,14 @@ int main(int ac, char** av)
 	qsort(a, n, sizeof a[0], cmp);
 	end = sec();
 	printf(" done!\n");
+	/*puts("after qsort:");
+	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
+	putchar('\n');*/
 
-	 
 	srand(getpid());
 	
-	for (i = 0; i < n; i++)
-		a[i] = rand();
+	/*for (i = 0; i < n; i++)
+		a[i] = rand();*/
  
 	/*puts("before sort:");
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
@@ -173,9 +177,18 @@ int main(int ac, char** av)
 	printf("Parallel mergesorting...");
 	fflush(stdout);
 	start2 = sec();
-	merge_sort(a, n, sizeof(a[0]), cmp);
+	merge_sort(b, n, sizeof(b[0]), cmp);
  	end2 = sec();
  	printf(" done!\n");
+
+	/*puts("after parsort:");
+	for (i = 0; i < n; i++) printf("%1.0f ", b[i]);
+	putchar('\n');*/
+
+	for (i = 0; i < n; i++){
+		//printf("i = %d\n", i);
+		assert(a[i] == b[i]);		
+	}
  	
 	/*puts("after sort:");
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);

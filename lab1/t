@@ -12,7 +12,7 @@ U=4
 A=10
 T=4
 P=1
-javac DataflowJonas.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > jonasinpt.txt
+javac DataflowJonas.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > jonassmall.txt
 #javac Dataflow.java && java -Xmx1024M Dataflow $S $V $U $A $T $P > angelica.txt
 #diff jonas.txt angelica.txt
 
