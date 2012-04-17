@@ -25,8 +25,9 @@ inline
 void merge(double *left, int l_len, double *right, int r_len, double *out, int (*cmp)(const void *, const void *))
 {
 	int i, j, k;
-	for (i = j = k = 0; i < l_len && j < r_len; )
-		out[k++] = left[i] < right[j] ? left[i++] : right[j++];
+	for (i = j = k = 0; i < l_len && j < r_len; ){
+		out[k++] = cmp((void*) &left[i], (void*) &right[j]) ? left[i++] : right[j++];
+	}
  
 	while (i < l_len) out[k++] = left[i++];
 	while (j < r_len) out[k++] = right[j++];
@@ -117,7 +118,7 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 static double sec(void)
 {
 	
-	return (double) time(NULL);;
+	return (double) time(NULL);
 }
 
 void par_sort(
@@ -159,14 +160,14 @@ int main(int ac, char** av)
 	end = sec();
 	printf(" done!\n");
 
-
 	 
 	srand(getpid());
+	
 	for (i = 0; i < n; i++)
 		a[i] = rand();
  
 	/*puts("before sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
 	printf("Parallel mergesorting...");
@@ -177,7 +178,7 @@ int main(int ac, char** av)
  	printf(" done!\n");
  	
 	/*puts("after sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
 	printf("\nqsort: \t\t\tTook %1.2f seconds..\n", (double) end-start);
