@@ -123,13 +123,6 @@ static double sec(void)
 	return (double) tv.tv_sec +  (double)tv.tv_usec / 1000000;
 }
 
-void par_sort(
-	void*		base,	// Array to sort.
-	size_t		n,	// Number of elements in base.
-	size_t		s,	// Size of each element.
-	int		(*cmp)(const void*, const void*)) // Behaves like strcmp
-{
-}
 
 static int cmp(const void* ap, const void* bp)
 {	
@@ -212,6 +205,7 @@ int main(int ac, char** av)
 	
 	unsigned int actual_threads = (unsigned int) pow(2.0, find_recursion_depth( nbr_threads));
 	printf("\nSorting %d elements using %d threads.\n", n, actual_threads);
+
 	printf("qsort: \t\tTook %1.5f seconds..\n", (double) end-start);
  	printf("mergesort: \tTook %1.5f seconds..\n", (double) end2-start2);
  	printf("p. mergesort: \tTook %1.5f seconds..\n", (double) end3-start3);
