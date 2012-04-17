@@ -205,7 +205,7 @@ int main(int ac, char** av)
  	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
  	double speedup = (double)(end-start)/(end2-start2);
  	printf("Speedup: %1.2fx\n", speedup);
- 	unsigned int thread_eff = (unsigned int)(  (100*speedup) / (double) (actual_threads - 1));
+ 	unsigned int thread_eff = (unsigned int)(  (100*speedup) / (double)actual_threads);
  	printf("Threading efficiency: %d%%\n", thread_eff);
 
 
