@@ -55,44 +55,42 @@ void recur(void* rs_in)
 	int status = -111;
 		
 	//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp);
-	recur_struct* rs_new = (recur_struct*) malloc(sizeof(recur_struct));
-	rs_new->buf 						= rs.tmp + l;
-	rs_new->tmp 						= rs.buf + l;
-	rs_new->len 						= rs.len - l;
-	rs_new->recursion_depth 			= rs.recursion_depth + 1;
-	rs_new->max_thread_split_depth 	= rs.max_thread_split_depth;
-	rs_new->cmp						= rs.cmp;
+	recur_struct rs_new;
+	rs_new.buf 						= rs.tmp + l;
+	rs_new.tmp 						= rs.buf + l;
+	rs_new.len 						= rs.len - l;
+	rs_new.recursion_depth 		    = rs.recursion_depth + 1;
+	rs_new.max_thread_split_depth 	= rs.max_thread_split_depth;
+	rs_new.cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		rs_new->c = 0;
-		status = pthread_create(&thread, NULL, recur, rs_new);
+		rs_new.c = 0;
+		status = pthread_create(&thread, NULL, recur, &rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
 		}
 	} else {
-		rs_new->c = rs.c + 1;
-		recur((void*) rs_new);	
+		rs_new.c = rs.c + 1;
+		recur((void*) &rs_new);	
 	}
 
 	//recur(tmp, buf, l, ++recursion_depth, max_thread_split_depth);
-	recur_struct* rs_new2 = (recur_struct*) malloc(sizeof(recur_struct));
-	rs_new2->tmp = rs.buf;
-	rs_new2->buf = rs.tmp;
-	rs_new2->len = l;
-	rs_new2->recursion_depth = rs.recursion_depth + 1;
-	rs_new2->max_thread_split_depth = rs.max_thread_split_depth;
-	rs_new2->cmp = rs.cmp;
-	rs_new2->c = rs.c + 1;
-	recur((void*) rs_new2);
+	recur_struct rs_new2;
+	rs_new2.tmp = rs.buf;
+	rs_new2.buf = rs.tmp;
+	rs_new2.len = l;
+	rs_new2.recursion_depth = rs.recursion_depth + 1;
+	rs_new2.max_thread_split_depth = rs.max_thread_split_depth;
+	rs_new2.cmp = rs.cmp;
+	rs_new2.c = rs.c + 1;
+	recur((void*) &rs_new2);
 	
 	if (status != -111){
 		pthread_join(thread, NULL); // Wait here
 	}
 
 	merge(rs.tmp, l, rs.tmp + l, rs.len - l, rs.buf, rs.cmp);
-	free(rs_new);
-	free(rs_new2);
 	//printf("c = %d\n", rs.c);
 }
  
@@ -145,8 +143,10 @@ int main(int ac, char** av)
 	int			i;
 	double*		a;
 	double*		b;
+	double*		c;
 	double		start, end;
 	double 		start2,end2;
+	double 		start3,end3;
 	nbr_threads = 4;
 
 	if (ac > 1)
@@ -158,16 +158,17 @@ int main(int ac, char** av)
 
 	a = malloc(n * sizeof a[0]);
 	b = malloc(n * sizeof b[0]);
+	c = malloc(n * sizeof b[0]);
 	for (i = 0; i < n; i++){
 		a[i] = rand();
-		b[i] = a[i];
+		c[i] = b[i] = a[i];
 	}
 
 	/*puts("before:");
 	for (i = 0; i < n; i++) printf("%1.0f\t%1.0f\n", a[i], b[i]);
 	putchar('\n');*/
 
-	printf("qsort:ing...");
+	printf("qsort...");
 	fflush(stdout);
 	start = sec();
 	qsort(a, n, sizeof a[0], cmp);
@@ -186,11 +187,22 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
-	printf("Parallel mergesorting...");
+	printf("mergesort...");
+	unsigned int tmp_nbr_threads = nbr_threads;
+	nbr_threads = 1;
 	fflush(stdout);
 	start2 = sec();
 	merge_sort(b, n, sizeof(b[0]), cmp);
  	end2 = sec();
+	nbr_threads = tmp_nbr_threads;
+ 	printf(" done!\n");
+
+
+	printf("parallel mergesort...");
+	fflush(stdout);
+	start3 = sec();
+	merge_sort(c, n, sizeof(c[0]), cmp);
+ 	end3 = sec();
  	printf(" done!\n");
 
 	/*puts("after parsort:");
@@ -200,20 +212,26 @@ int main(int ac, char** av)
 	
 	unsigned int actual_threads = (unsigned int) pow(2.0, find_recursion_depth( nbr_threads));
 	printf("\nSorting %d elements using %d threads.\n", n, actual_threads);
-	printf("qsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
- 	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
- 	double speedup = (double)(end-start)/(end2-start2);
- 	printf("Speedup: %1.2fx\n", speedup);
- 	unsigned int thread_eff = (unsigned int)(  (100*speedup) / (double) (actual_threads - 1));
- 	printf("Threading efficiency: %d%%\n", thread_eff);
+	printf("qsort: \t\tTook %1.5f seconds..\n", (double) end-start);
+ 	printf("mergesort: \tTook %1.5f seconds..\n", (double) end2-start2);
+ 	printf("p. mergesort: \tTook %1.5f seconds..\n", (double) end3-start3);
+ 	double speedup_q_vs_m = (double)(end-start)/(end2-start2);
+ 	double speedup_q_vs_pm = (double)(end-start)/(end3-start3);
+ 	double speedup_m_vs_pm = (double)(end2-start2)/(end3-start3);
+ 	printf("\nqsort vs. mergesort speedup: \t\t%1.2fx\n", speedup_q_vs_m);
+ 	printf("qsort vs. p. mergesort speedup: \t%1.2fx\n", speedup_q_vs_pm);
+ 	printf("mergesort vs. p. mergesort speedup: \t%1.2fx\n", speedup_m_vs_pm);
+
+ 	unsigned int thread_eff = (unsigned int)(  (100*speedup_m_vs_pm) / (double) (actual_threads));
+ 	printf("mergesort vs. p. mergesort threading efficiency: %d%%\n", thread_eff);
 
 
 	for (i = 0; i < n; i++){
-		//printf("i = %d\n", i);
-		assert(a[i] == b[i]);		
+		assert(a[i] == c[i]);		
 	}
 	free(a);
 	free(b);
+	free(c);
 	return 0;
 }
 
