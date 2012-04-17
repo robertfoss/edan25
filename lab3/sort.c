@@ -11,6 +11,7 @@
 #include <math.h>
 
 static unsigned int nbr_threads;
+double 		start2;
 
 inline
 unsigned int find_recursion_depth(unsigned int x)
@@ -192,10 +193,6 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", b[i]);
 	putchar('\n');*/
 
-	for (i = 0; i < n; i++){
-		//printf("i = %d\n", i);
-		assert(a[i] == b[i]);		
-	}
  	
 	/*puts("after sort:");
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
@@ -206,6 +203,11 @@ int main(int ac, char** av)
 	printf("\nSorting %d elements using %d threads.\n", n, actual_threads);
 	printf("qsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
  	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
+
+	for (i = 0; i < n; i++){
+		//printf("i = %d\n", i);
+		assert(a[i] == b[i]);		
+	}
 
 	return 0;
 }
