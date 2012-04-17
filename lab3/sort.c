@@ -192,11 +192,6 @@ int main(int ac, char** av)
 	/*puts("after parsort:");
 	for (i = 0; i < n; i++) printf("%1.0f ", b[i]);
 	putchar('\n');*/
-
- 	
-	/*puts("after sort:");
-	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
-	putchar('\n');*/
 	
 	
 	unsigned int actual_threads = (unsigned int) pow(2.0, find_recursion_depth( nbr_threads));
