@@ -196,8 +196,8 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
-	printf("Sorting %d elements.\n", n);
-	printf("\nqsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
+	printf("\nSorting %d elements.\n", n);
+	printf("qsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
  	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
 
 	return 0;
