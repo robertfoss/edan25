@@ -1,4 +1,4 @@
-#include <assert.h>
+h#include <assert.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#define NTHREADS 4
+#define NTHREADS 5
 
 
 inline

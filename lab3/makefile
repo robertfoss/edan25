@@ -1,7 +1,6 @@
-CFLAGS = -g -Wall
-
+CFLAGS = -g -Wall -O2
 CC = gcc
-LIBS =  -lpthread  -lm -mnative
+LIBS =  -lpthread  -lm
 INCLUDES =
 SRCS = sort.c
 
@@ -12,11 +11,6 @@ all: sort
 sort: sort.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ sort.o ${LIBS}
 	./sort
-	
-merge: mergesort.o
-	${CC} ${CFLAGS} ${INCLUDES} -o $@ mergesort.o ${LIBS}
-	./merge
-
 
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
