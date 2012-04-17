@@ -17,7 +17,7 @@ inline
 unsigned int find_recursion_depth(unsigned int x)
 {
 	
-	return (unsigned int) (ceil (log( (double) x ) / log( 2.0 ))  ) -1;
+	return (unsigned int) (floor (log( (double) x ) / log( 2.0 ))  );
 }
 
  
@@ -55,7 +55,7 @@ void recur(void* rs_in)
 		
 	//recur(tmp + l, buf + l, len - l, ++recursion_depth, max_thread_split_depth, cmp);
 	recur_struct rs_new;
-	rs_new.buf 						= rs.tmp +l;
+	rs_new.buf 						= rs.tmp + l;
 	rs_new.tmp 						= rs.buf + l;
 	rs_new.len 						= rs.len - l;
 	rs_new.recursion_depth 			= rs.recursion_depth + 1;
@@ -105,7 +105,7 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
  	rs.buf = a;
  	rs.tmp = tmp;
  	rs.len = len;
- 	rs.recursion_depth = 0;
+ 	rs.recursion_depth = 1;
  	rs.max_thread_split_depth = find_recursion_depth( NTHREADS);
  	rs.cmp = cmp;
  	
@@ -133,12 +133,12 @@ static int cmp(const void* ap, const void* bp)
 {	
 	/* you need to modify this function to compare doubles. */
 
-	return 0; 
+	return ((*(double*) ap) < (*(double*) bp)); 
 }
 
 int main(int ac, char** av)
 {
-	int		n = 2000000;
+	int		n = 20000000;
 	int		i;
 	double*		a;
 	double		start, end;
@@ -162,30 +162,30 @@ int main(int ac, char** av)
 
 	end = sec();
 
-	printf("%1.2f s\n", end - start);
+	printf("#1: Took %1.2f seconds..\n", (double) end-start);
+	//printf("%1.2f s\n", end - start);
 
 	free(a);
 	
-	
-	#	define LEN 200000
-	double x[LEN];
+	srand(getpid());
+	double x[n];
  
-	for (i = 0; i < LEN; i++)
-		x[i] = rand() % LEN;
+	for (i = 0; i < n; i++)
+		x[i] = rand();
  
-	puts("before sort:");
-	//for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
-	//putchar('\n');
+	/*puts("before sort:");
+	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	putchar('\n');*/
 	double start2,end2;
 	start2 = sec();
-	merge_sort(x, LEN, sizeof(x[0]), cmp);
+	merge_sort(x, n, sizeof(x[0]), cmp);
  	end2 = sec();
  	
-	puts("after sort:");
-	//for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
-	//putchar('\n');
- 	printf("Took %d seconds..", (double) end2-start2);
- 	printf("round power-2 %d\n", find_recursion_depth(5));
+	/*puts("after sort:");
+	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	putchar('\n');*/
+ 	printf("#2: Took %1.2f seconds..\n", (double) end2-start2);
+ 	printf("find_recursion_depth %d\n", find_recursion_depth(4));
 
 
 	return 0;
