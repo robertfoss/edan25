@@ -25,8 +25,10 @@ inline
 void merge(double *left, int l_len, double *right, int r_len, double *out, int (*cmp)(const void *, const void *))
 {
 	int i, j, k;
-	for (i = j = k = 0; i < l_len && j < r_len; )
-		out[k++] = left[i] < right[j] ? left[i++] : right[j++];
+	for (i = j = k = 0; i < l_len && j < r_len; ){
+		out[k++] = cmp((void*) &left[i], (void*) &right[j]) ? left[i++] : right[j++];
+		//out[k++] = left[i] < right[j] ? left[i++] : right[j++];
+	}
  
 	while (i < l_len) out[k++] = left[i++];
 	while (j < r_len) out[k++] = right[j++];
@@ -63,7 +65,7 @@ void recur(void* rs_in)
 	rs_new.cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		printf("Creating new thread at depth: %d\n", rs.recursion_depth);
+		//printf("Creating new thread at depth: %d\n", rs.recursion_depth);
 		///*
 		status = pthread_create( &thread, NULL, recur, &rs_new);
 		if (status != 0){
@@ -118,7 +120,7 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 static double sec(void)
 {
 	
-	return (double) time(NULL);;
+	return (double) time(NULL);
 }
 
 void par_sort(
@@ -165,27 +167,27 @@ int main(int ac, char** av)
 	printf("#1: Took %1.2f seconds..\n", (double) end-start);
 	//printf("%1.2f s\n", end - start);
 
-	free(a);
+	//free(a);
 	
 	srand(getpid());
-	double x[n];
+	//double x[n];
  
 	for (i = 0; i < n; i++)
-		x[i] = rand();
+		a[i] = rand();
  
 	/*puts("before sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	double start2,end2;
 	start2 = sec();
-	merge_sort(x, n, sizeof(x[0]), cmp);
+	merge_sort(a, n, sizeof(a[0]), cmp);
  	end2 = sec();
  	
 	/*puts("after sort:");
-	for (i = 0; i < LEN; i++) printf("%1.0f ", x[i]);
+	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
  	printf("#2: Took %1.2f seconds..\n", (double) end2-start2);
- 	printf("find_recursion_depth %d\n", find_recursion_depth(4));
+ 	//printf("find_recursion_depth %d\n", find_recursion_depth(4));
 
 
 	return 0;
