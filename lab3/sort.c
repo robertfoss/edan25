@@ -1,4 +1,4 @@
-h#include <assert.h>
+#include <assert.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -16,7 +16,7 @@ h#include <assert.h>
 inline
 unsigned int find_recursion_depth(unsigned int x)
 {
-	return (unsigned int) (floor (log( (double) x ) / log( 2.0 ))  );
+	return (unsigned int) (floor(log((double) x ) / log(2.0)));
 }
 
 inline
@@ -38,6 +38,7 @@ struct recur_struct{
 	unsigned int recursion_depth;
 	unsigned int max_thread_split_depth;
 	int (*cmp)(const void *, const void *);
+	int c;
 };
 typedef struct recur_struct recur_struct;
 
@@ -62,12 +63,14 @@ void recur(void* rs_in)
 	rs_new->cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		status = pthread_create( &thread, NULL, recur, rs_new);
+		rs_new->c = 0;
+		status = pthread_create(&thread, NULL, recur, rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
 		}
 	} else {
+		rs_new->c = rs.c + 1;
 		recur((void*) rs_new);	
 	}
 
@@ -79,16 +82,17 @@ void recur(void* rs_in)
 	rs_new2->recursion_depth = rs.recursion_depth + 1;
 	rs_new2->max_thread_split_depth = rs.max_thread_split_depth;
 	rs_new2->cmp = rs.cmp;
+	rs_new2->c = rs.c + 1;
 	recur((void*) rs_new2);
-	
 	
 	if (status != -111){
 		pthread_join(thread, NULL); // Wait here
 	}
- 
+
 	merge(rs.tmp, l, rs.tmp + l, rs.len - l, rs.buf, rs.cmp);
 	free(rs_new);
 	free(rs_new2);
+	//printf("c = %d\n", rs.c);
 }
  
 /* preparation work before recursion */
@@ -103,11 +107,12 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
  	rs.tmp = tmp;
  	rs.len = len;
  	rs.recursion_depth = 1;
- 	rs.max_thread_split_depth = find_recursion_depth( NTHREADS);
+ 	rs.max_thread_split_depth = find_recursion_depth(NTHREADS);
  	rs.cmp = cmp;
+	rs.c = 0;
  	
-	recur( (void*) &rs );
- 
+	recur((void*) &rs);
+
 	free(tmp);
 }
 
@@ -132,7 +137,7 @@ static int cmp(const void* ap, const void* bp)
 
 int main(int ac, char** av)
 {
-	int			n = 20000000;
+	int			n = 2000000;
 	int			i;
 	double*		a;
 	double*		b;
@@ -196,6 +201,9 @@ int main(int ac, char** av)
 	
 	printf("\nqsort: \t\t\tTook %1.2f seconds..\n", (double) end-start);
  	printf("parallel mergsort: \tTook %1.2f seconds..\n", (double) end2-start2);
+
+	free(a);
+	free(b);
 
 	return 0;
 }

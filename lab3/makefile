@@ -10,7 +10,7 @@ all: sort
 # The variable $@ has the value of the target. In this case $@ = psort
 sort: sort.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ sort.o ${LIBS}
-	./sort
+	#./sort
 
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
