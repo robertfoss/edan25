@@ -10,14 +10,14 @@
 #include <unistd.h>
 #include <math.h>
 
-#define NTHREADS 5
-
+static unsigned int nbr_threads;
 
 inline
 unsigned int find_recursion_depth(unsigned int x)
 {
-	return (unsigned int) (floor (log( (double) x ) / log( 2.0 ))  );
+	return (unsigned int) (ceil (log( (double) x ) / log( 2.0 )) );
 }
+
 
 inline
 void merge(double *left, int l_len, double *right, int r_len, double *out, int (*cmp)(const void *, const void *))
@@ -31,6 +31,7 @@ void merge(double *left, int l_len, double *right, int r_len, double *out, int (
 	while (j < r_len) out[k++] = right[j++];
 }
 
+
 struct recur_struct{
 	double *buf;
 	double *tmp; 
@@ -40,6 +41,7 @@ struct recur_struct{
 	int (*cmp)(const void *, const void *);
 };
 typedef struct recur_struct recur_struct;
+
 
 /* inner recursion of merge sort */
 void recur(void* rs_in)
@@ -62,6 +64,7 @@ void recur(void* rs_in)
 	rs_new->cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
+		printf("\nthread started on level: %d\n", rs.recursion_depth);
 		status = pthread_create( &thread, NULL, recur, rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
@@ -103,7 +106,7 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
  	rs.tmp = tmp;
  	rs.len = len;
  	rs.recursion_depth = 1;
- 	rs.max_thread_split_depth = find_recursion_depth( NTHREADS);
+ 	rs.max_thread_split_depth = find_recursion_depth( nbr_threads);
  	rs.cmp = cmp;
  	
 	recur( (void*) &rs );
@@ -140,9 +143,12 @@ int main(int ac, char** av)
 	double*		b;
 	double		start, end;
 	double 		start2,end2;
+	nbr_threads = 4;
 
 	if (ac > 1)
 		sscanf(av[1], "%d", &n);
+	if (ac > 2)
+		sscanf(av[2], "%d", &nbr_threads);
 
 	srand(getpid());
 
@@ -196,7 +202,9 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 	
-	printf("\nSorting %d elements.\n", n);
+	
+	unsigned int actual_threads = (unsigned int) pow(2.0, find_recursion_depth( nbr_threads));
+	printf("\nSorting %d elements using %d threads.\n", n, actual_threads);
 	printf("qsort: \t\t\tTook %1.5f seconds..\n", (double) end-start);
  	printf("parallel mergsort: \tTook %1.5f seconds..\n", (double) end2-start2);
 
