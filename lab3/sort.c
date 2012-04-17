@@ -38,7 +38,7 @@ struct recur_struct{
 	unsigned int recursion_depth;
 	unsigned int max_thread_split_depth;
 	int (*cmp)(const void *, const void *);
-	int c;
+//	int c;
 };
 typedef struct recur_struct recur_struct;
 
@@ -48,7 +48,7 @@ void recur(void* rs_in)
 {
 	recur_struct rs = *((recur_struct*) rs_in);
 	
-	int l = rs.len / 2;
+	int l = rs.len >> 1; // div by 2
 	if (rs.len <= 1) return;
  	
  	pthread_t thread;
@@ -64,14 +64,14 @@ void recur(void* rs_in)
 	rs_new.cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		rs_new.c = 0;
+		//rs_new.c = 0;
 		status = pthread_create(&thread, NULL, recur, &rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
 		}
 	} else {
-		rs_new.c = rs.c + 1;
+		//rs_new.c = rs.c + 1;
 		recur((void*) &rs_new);	
 	}
 
@@ -83,7 +83,7 @@ void recur(void* rs_in)
 	rs_new2.recursion_depth = rs.recursion_depth + 1;
 	rs_new2.max_thread_split_depth = rs.max_thread_split_depth;
 	rs_new2.cmp = rs.cmp;
-	rs_new2.c = rs.c + 1;
+	//rs_new2.c = rs.c + 1;
 	recur((void*) &rs_new2);
 	
 	if (status != -111){
@@ -109,7 +109,7 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 
  	rs.max_thread_split_depth = find_recursion_depth( nbr_threads);
  	rs.cmp = cmp;
-	rs.c = 0;
+//	rs.c = 0;
  	
 	recur((void*) &rs);
 

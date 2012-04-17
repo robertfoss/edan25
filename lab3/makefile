@@ -1,6 +1,6 @@
-CFLAGS = -g -Wall -O2
+CFLAGS = -g -Wall -O2 -ffast-math -std=c99
 CC = gcc
-LIBS =  -lpthread  -lm
+LIBS =  -lpthread -lm
 INCLUDES =
 SRCS = sort.c
 
