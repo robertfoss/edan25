@@ -153,8 +153,7 @@ int main(int ac, char** av)
 	b = malloc(n * sizeof b[0]);
 	c = malloc(n * sizeof b[0]);
 	for (i = 0; i < n; i++){
-		a[i] = rand();
-		c[i] = b[i] = a[i];
+		c[i] = b[i] = a[i] = rand();
 	}
 
 	/*puts("before:");
@@ -171,14 +170,7 @@ int main(int ac, char** av)
 	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
 	putchar('\n');*/
 
-	srand(getpid());
-	
-	/*for (i = 0; i < n; i++)
-		a[i] = rand();*/
- 
-	/*puts("before sort:");
-	for (i = 0; i < n; i++) printf("%1.0f ", a[i]);
-	putchar('\n');*/
+
 	
 	printf("mergesort...");
 	unsigned int tmp_nbr_threads = nbr_threads;
@@ -198,8 +190,8 @@ int main(int ac, char** av)
  	end3 = sec();
  	printf(" done!\n");
 
-	/*puts("after parsort:");
-	for (i = 0; i < n; i++) printf("%1.0f ", b[i]);
+	/*puts("after p. mergesort:");
+	for (i = 0; i < n; i++) printf("%1.0f ", c[i]);
 	putchar('\n');*/
 	
 	
