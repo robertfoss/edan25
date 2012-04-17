@@ -226,6 +226,7 @@ int main(int ac, char** av)
  	printf("mergesort vs. p. mergesort threading efficiency: %d%%\n", thread_eff);
 
 
+
 	for (i = 0; i < n; i++){
 		assert(a[i] == c[i]);		
 	}
