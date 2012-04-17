@@ -64,7 +64,6 @@ void recur(void* rs_in)
 	rs_new->cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		printf("\nthread started on level: %d\n", rs.recursion_depth);
 		status = pthread_create( &thread, NULL, recur, rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
