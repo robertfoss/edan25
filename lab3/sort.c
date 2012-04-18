@@ -11,6 +11,9 @@
 #include <math.h>
 
 static unsigned int nbr_threads;
+static unsigned int tc = 0;
+static int use_t;
+static int* t;
 
 inline
 unsigned int find_recursion_depth(unsigned int x)
@@ -38,7 +41,8 @@ struct recur_struct{
 	unsigned int recursion_depth;
 	unsigned int max_thread_split_depth;
 	int (*cmp)(const void *, const void *);
-//	int c;
+	int c;
+	unsigned int tn;
 };
 typedef struct recur_struct recur_struct;
 
@@ -49,7 +53,12 @@ void recur(void* rs_in)
 	recur_struct rs = *((recur_struct*) rs_in);
 	
 	int l = rs.len >> 1; // div by 2
-	if (rs.len <= 1) return;
+	if (rs.len <= 1){
+		if(use_t){
+			t[rs.tn] = rs.c;
+		}
+		return;
+	}
  	
  	pthread_t thread;
 	int status = -111;
@@ -64,14 +73,17 @@ void recur(void* rs_in)
 	rs_new.cmp						= rs.cmp;
 	
 	if (rs.recursion_depth <= rs.max_thread_split_depth){
-		//rs_new.c = 0;
+		rs_new.c = 0;
+		rs_new.tn = tc;
+		tc++;
 		status = pthread_create(&thread, NULL, recur, &rs_new);
 		if (status != 0){
 			printf("Horrible error occured, thread couldn't be created!\nAborting..\n");
 			exit(1);
 		}
 	} else {
-		//rs_new.c = rs.c + 1;
+		rs_new.tn = rs.tn;
+		rs_new.c = rs.c + 1;
 		recur((void*) &rs_new);	
 	}
 
@@ -83,7 +95,8 @@ void recur(void* rs_in)
 	rs_new2.recursion_depth = rs.recursion_depth + 1;
 	rs_new2.max_thread_split_depth = rs.max_thread_split_depth;
 	rs_new2.cmp = rs.cmp;
-	//rs_new2.c = rs.c + 1;
+	rs_new2.c = rs.c + 1;
+	rs_new2.tn = rs.tn;
 	recur((void*) &rs_new2);
 	
 	if (status != -111){
@@ -109,7 +122,9 @@ void merge_sort(double *a, size_t len, size_t elem_size, int (*cmp)(const void *
 
  	rs.max_thread_split_depth = find_recursion_depth( nbr_threads);
  	rs.cmp = cmp;
-//	rs.c = 0;
+	rs.c = 0;
+	rs.tn = tc;
+	tc++;
  	
 	recur((void*) &rs);
 
@@ -132,7 +147,7 @@ static int cmp(const void* ap, const void* bp)
 
 int main(int ac, char** av)
 {
-	int			n = 2000000;
+	int			n = 1000000;
 	int			i;
 	double*		a;
 	double*		b;
@@ -140,12 +155,17 @@ int main(int ac, char** av)
 	double		start, end;
 	double 		start2,end2;
 	double 		start3,end3;
-	nbr_threads = 4;
+	nbr_threads = 10;
+	use_t = 1;
+	unsigned int rec_depth = find_recursion_depth(nbr_threads);
+	unsigned int actual_threads = (unsigned int) pow(2.0, rec_depth);
 
-	if (ac > 1)
+	/*if (ac > 1)
 		sscanf(av[1], "%d", &n);
 	if (ac > 2)
-		sscanf(av[2], "%d", &nbr_threads);
+		sscanf(av[2], "%d", &nbr_threads);*/
+
+	printf("\nnbr_threads: %d\tactual_threads: %d\trec_depth: %d\n", nbr_threads, actual_threads, rec_depth);
 
 	srand(getpid());
 
@@ -154,6 +174,10 @@ int main(int ac, char** av)
 	c = malloc(n * sizeof b[0]);
 	for (i = 0; i < n; i++){
 		c[i] = b[i] = a[i] = rand();
+	}
+
+	if(use_t){
+		t = malloc(actual_threads * sizeof t[0]);
 	}
 
 	/*puts("before:");
@@ -195,7 +219,6 @@ int main(int ac, char** av)
 	putchar('\n');*/
 	
 	
-	unsigned int actual_threads = (unsigned int) pow(2.0, find_recursion_depth( nbr_threads));
 	printf("\nSorting %d elements using %d threads.\n", n, actual_threads);
 
 	printf("qsort: \t\tTook %1.5f seconds..\n", (double) end-start);
@@ -219,6 +242,14 @@ int main(int ac, char** av)
 	free(a);
 	free(b);
 	free(c);
+
+	if(use_t){
+		for (i = 0; i < actual_threads; i++){
+			printf("t[%d] = %d\n", i, t[i]);
+		}
+		free(t);
+	}
+
 	return 0;
 }
 
