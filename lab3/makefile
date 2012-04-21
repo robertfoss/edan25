@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -O2 -ffast-math -std=c99
+CFLAGS = -g -Wall -O2 -ffast-math -std=c99 -DTHREAD_STATS
 CC = gcc
 LIBS =  -lpthread -lm
 INCLUDES =
