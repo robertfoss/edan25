@@ -13,7 +13,7 @@ PRINT_OUTPUT=false
 PRINT_INPUT=true
 PRINT_DEBUG=false
 
-all: sort
+all: dataflow
 
 # The variable $@ has the value of the target. In this case $@ = psort
 dataflow: dataflow.o
@@ -24,6 +24,8 @@ dataflow: dataflow.o
 	rm -f *.class
 	diff c_output.txt java_output.txt > diff.txt
 
+bitset_test: bitset_test.o
+	${CC} ${CFLAGS} ${INCLUDES} -o $@ bitset_test.o bitset.o ${LIBS}
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
 
