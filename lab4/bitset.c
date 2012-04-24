@@ -183,14 +183,14 @@ void bitset_print(BitSet_struct* bs){
         
         while(last_print_offset < bs_print_offset){
             printf("%u-%u\t|", last_print_offset, (unsigned int) (last_print_offset + SUBSET_BITS - 1));
-            for(int j = 0; j < SUBSET_BITS; ++j)
+            for(int j = 0; j < SUBSET_BITS-1; ++j)
                 printf("0");
             printf("|\n");
             last_print_offset += SUBSET_BITS;
         }
 
         printf("%u-%u\t|", bs_print_offset, (unsigned int) (bs_print_offset + SUBSET_BITS - 1));
-        for(int i = 0; i < SUBSET_BITS; ++i){
+        for(int i = 0; i < SUBSET_BITS-1; ++i){
             if(((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
                 printf("1");
             } else {
@@ -207,14 +207,14 @@ void bitset_print(BitSet_struct* bs){
 
         while(last_print_offset < bs_print_offset){
             printf("%u-%u\t|", last_print_offset, (unsigned int) (last_print_offset + SUBSET_BITS - 1));
-            for(int j = 0; j < SUBSET_BITS; ++j)
+            for(int j = 0; j < SUBSET_BITS-1; ++j)
                 printf("0");
             printf("|\n");
             last_print_offset += SUBSET_BITS;
         }
 
         printf("%u-%u\t|", bs_print_offset, (unsigned int) (bs_print_offset + SUBSET_BITS - 1));
-        for(int i = 0; i < SUBSET_BITS; ++i){
+        for(int i = 0; i < SUBSET_BITS-1; ++i){
             if(((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
                 printf("1");
             } else {
