@@ -4,13 +4,13 @@
 #define SUBSET_BITS = (sizeof(unsigned int))
 
 
-typedef struct{
+typedef struct BitSetSubset_struct {
 	unsigned int offset;
 	unsigned int bit;
 } BitSetSubset_struct;
 
 
-typedef struct{
+typedef struct BitSet_struct {
 	list_t* list;
 } BitSet_struct;
 

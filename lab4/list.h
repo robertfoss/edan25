@@ -1,7 +1,6 @@
-struct list_t;
-typedef struct{
-	list_t* next;
-	list_t* prev;
+typedef struct list_t {
+	struct list_t* next;
+	struct list_t* prev;
 	void* data;
 } list_t;
 
