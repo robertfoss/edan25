@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "list.h"
 
-#define SUBSET_BITS ( sizeof(unsigned int) )
+#define SUBSET_BITS ( sizeof(unsigned int)*8 )
 
 
 typedef struct BitSetSubset_struct {

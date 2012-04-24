@@ -100,17 +100,22 @@ BitSet_struct* bitset_copy(BitSet_struct* arg){
 
 bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
     list_t* bs_l = bs->list;
-    unsigned int bit_offset = (unsigned int)(bit_index % SUBSET_BITS);
-    unsigned int bit_local_index = (unsigned int) (bit_index / SUBSET_BITS);
+    unsigned int bit_offset = (unsigned int)((bit_index / SUBSET_BITS)* SUBSET_BITS);
+    unsigned int bit_local_index = (unsigned int) (bit_index % SUBSET_BITS);
     
     if(bs_l == NULL && bit_val){
+        printf("bitset_set_bit: bs_l == NULL && bit_val == true\n");
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
         bss->bit = 0 & ~( ((unsigned int) bit_val) << bit_local_index);
+        bss->offset = bit_offset;
         bs->list = create_node(bss);
         return false;
     } else if (bs_l == NULL){
+        printf("bitset_set_bit: bs_l == NULL\n");
         return false;
     }
+
+    printf("bitset_set_bit: bs_l: \t offset: %d\tbit_local_index: %d\tbit_offset: %d\n", ((BitSetSubset_struct*) bs_l->data)->offset, bit_local_index, bit_offset );
 
     unsigned int bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     while(bss_offset < bit_offset && bs_l->next != bs_l){
@@ -125,6 +130,7 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
     } else {
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
         bss->bit = 0 & ~( ((unsigned int) bit_val) << bit_local_index);
+        bss->offset = bit_offset;
         insert_after(bs_l, create_node(bss));
         old_bit_val = false;
     }
@@ -155,6 +161,7 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
 }
 
 void bitset_print(BitSet_struct* bs){
+    printf("bitset_print:\t\n");
     list_t* bs_l = bs->list;
     if (bs_l == NULL){
         printf("Empty bitset (all zeros).\n");
@@ -162,18 +169,20 @@ void bitset_print(BitSet_struct* bs){
     }
 
     unsigned int last_print_offset = 0;
-    unsigned int bs_print_offset = ((BitSetSubset_struct*) bs->list->data)->offset;
+    unsigned int bs_print_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     while(bs_l->next != bs_l){
         
         while(last_print_offset < bs_print_offset){
-            printf("%d-%d\t|", last_print_offset, last_print_offset + 63);
-            for(int j = 0; j < 64; ++j)
+            printf("fillout\n");
+            printf("%d-%d\t|", last_print_offset, last_print_offset + SUBSET_BITS - 1);
+            for(int j = 0; j < SUBSET_BITS; ++j)
                 printf("0");
             printf("|\n");
-            last_print_offset += 64;
+            last_print_offset += SUBSET_BITS;
         }
 
-        printf("%d-%d\t|", last_print_offset, last_print_offset + 63);
+        printf("\nactual data:\n");
+        printf("%d-%d\t|", bs_print_offset, bs_print_offset + SUBSET_BITS - 1);
         for(int i = 0; i < SUBSET_BITS; ++i){
             if((bool) ((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
                 printf("1");
@@ -181,8 +190,12 @@ void bitset_print(BitSet_struct* bs){
                 printf("0");
             }
         }
+        printf("|\n");
+        last_print_offset += SUBSET_BITS;
+
+
         bs_l = bs_l->next;
-        bs_print_offset = ((BitSetSubset_struct*) bs->list->data)->offset;
+        bs_print_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     }
 }
 
