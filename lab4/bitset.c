@@ -4,12 +4,12 @@
 
 #include "bitset.h"
 
-inline
+inline static
 unsigned int nand_bits(unsigned int uint1, unsigned int uint2){
     return ~(uint1 & uint2);
 }
 
-inline
+inline static
 unsigned int or_bits(unsigned int uint1, unsigned int uint2){
     return (uint1 | uint2);
 }
