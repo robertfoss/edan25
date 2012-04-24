@@ -1,3 +1,6 @@
+#ifndef BITSET_H
+#define BITSET_H
+
 #include <stdbool.h>
 #include "list.h"
 
@@ -40,5 +43,5 @@ void bitset_print(BitSet_struct* bs);
 
 /** Creates a copy of a bitset */
 BitSet_struct* bitset_copy(BitSet_struct* arg);
-
+#endif
 
