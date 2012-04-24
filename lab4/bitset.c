@@ -171,7 +171,6 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
 }
 
 void bitset_print(BitSet_struct* bs){
-    printf("bitset_print:\t\n");
     list_t* bs_l = bs->list;
     if (bs_l == NULL){
         printf("Empty bitset (all zeros).\n");
