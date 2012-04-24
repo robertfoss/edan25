@@ -9,9 +9,12 @@ list_t* create_node(void* data){
 }
 
 void* remove_node(list_t* list){
+    void* data_tmp = list->data;
 	list_t* tmp = list->prev;
 	tmp->next = list->next;
 	list->next->prev = tmp;
+    free(list);
+    return data_tmp;
 }
 
 void insert_after(list_t* target, list_t* new_node){
