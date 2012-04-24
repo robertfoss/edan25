@@ -18,13 +18,13 @@ all: dataflow
 # The variable $@ has the value of the target. In this case $@ = psort
 dataflow: dataflow.o bitset.o list.o rand.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ dataflow.o bitset.o list.o rand.o ${LIBS}
-	./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > c_output.txt
+	#./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > c_output.txt
 
-	javac DataflowCorrect.java && java -Xmx1024M Dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > java_output.txt
-	rm -f *.class
-	diff c_output.txt java_output.txt > diff.txt
+	#javac DataflowCorrect.java && java -Xmx1024M Dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > java_output.txt
+	#rm -f *.class
+	#diff c_output.txt java_output.txt > diff.txt
 
-bitset_test: bitset_test.o
+bitset_test: bitset_test.o bitset.o list.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ bitset_test.o bitset.o list.o ${LIBS}
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
