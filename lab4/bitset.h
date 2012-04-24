@@ -1,9 +1,11 @@
-#define SUBSET_BITS = (sizeof(unsigned int))
-#include "list.h"
 #include <stdbool.h>
+#include "list.h"
+
+#define SUBSET_BITS = (sizeof(unsigned int))
+
 
 typedef struct{
-	size_t offset;
+	unsigned int offset;
 	unsigned int bit;
 } BitSetSubset_struct;
 
