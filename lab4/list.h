@@ -1,8 +1,9 @@
+#ifndef LIST_H
+#define LIST_H
+
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef LIST_H
-#define LIST_H
 
 typedef struct list_t {
 	struct list_t* next;
