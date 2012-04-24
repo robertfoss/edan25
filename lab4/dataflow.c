@@ -5,8 +5,8 @@
 #include <math.h>
 #include <sys/times.h>
 #include <sys/time.h>
-#include <stdbool.h>
-#include <stdlib.h>
+//#include <stdbool.h>
+//#include <stdlib.h>
 //#include <stdio.h>
 #include <ctype.h>
 

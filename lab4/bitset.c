@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "bitset.h"
 
 
