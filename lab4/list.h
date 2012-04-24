@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef LIST_H
+#define LIST_H
+
 typedef struct list_t {
 	struct list_t* next;
 	struct list_t* prev;
@@ -18,3 +21,6 @@ void insert_after(list_t* target, list_t* new_node);
 
 /** Insert an element last in the list */
 void add_last(list_t* list, list_t* new_node);
+
+#endif
+
