@@ -223,8 +223,7 @@ void bitset_print(BitSet_struct* bs){
                 printf("0");
             }
         }
-        printf("|");
-        printf(" -- %u\n", ((BitSetSubset_struct*) bs_l->data)->bit); // TODO: deleteme
+        printf("|\n");
         last_print_offset += SUBSET_BITS;
 }
 
