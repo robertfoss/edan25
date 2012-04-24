@@ -103,6 +103,13 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
     unsigned int bit_offset = (unsigned int)(bit_index % SUBSET_BITS);
     unsigned int bit_local_index = (unsigned int) (bit_index / SUBSET_BITS);
     
+    if(bs_l == NULL && bit_val){
+        BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
+        bss->bit = 0 & ~( ((unsigned int) bit_val) << bit_local_index);
+        bs_l = create_node(bss);
+    } else if (bs_l == NULL){
+        return false;
+    }
 
     unsigned int bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     while(bss_offset < bit_offset && bs_l->next != bs_l){
