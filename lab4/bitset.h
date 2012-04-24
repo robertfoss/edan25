@@ -1,4 +1,6 @@
 #define SUBSET_BITS = (sizeof(unsigned int))
+#include "list.h"
+#include <stdbool.h>
 
 typedef struct{
 	size_t offset;

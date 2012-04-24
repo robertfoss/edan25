@@ -1,5 +1,5 @@
 struct list_t;
-typdef struct{
+typedef struct{
 	list_t* next;
 	list_t* prev;
 	void* data;
