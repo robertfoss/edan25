@@ -179,6 +179,3 @@ void bitset_print(BitSet_struct* bs){
     }
 }
 
-
-
-
