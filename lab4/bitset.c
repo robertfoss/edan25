@@ -125,8 +125,31 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
 
 void bitset_print(BitSet_struct* bs){
     list_t* bs_l = bs->list;
+    if (bs_l == NULL){
+        printf("Empty bitset (all zeros).\n");
+        return;
+    }
+
+    unsigned int last_print_offset = 0;
+    unsigned int bs_print_offset = bs->list->data->offset;
     while(bs_l->next != bs_l){
-        for(int i = 0; i < SUBSET_BITS; )
+        
+        while(last_print_offset < bs_print_offset){
+            printf("%d-%d\t|", last_print_offset, last_print_offset + 63);
+            for(int j = 0; j < 64; ++j)
+                printf("0");
+            printf("|\n");
+            last_print_offset += 64;
+        }
+
+        printf("%d-%d\t|", last_print_offset, last_print_offset + 63);
+        for(int i = 0; i < SUBSET_BITS; ++i){
+            if((bool) bs_l->data->bit & (1 << x)){
+                print("1")
+            } else {
+                print("0");
+            }
+        }
         bs_l = bs_l->next;
     }
 }
