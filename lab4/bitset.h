@@ -19,8 +19,7 @@ typedef struct BitSet_struct {
 
 
 /** Create and initialize an empty BitSet_struct. The BitSet_struct represents a 
-    near infinite set of zero bits.
-    Actual max length is sizeof(unsigned int)*(sizeof(size_t)^2 -1). */
+    near infinite set of zero bits. */
 BitSet_struct* bitset_create();
 
 /** Logical or of each bit of result and arg, (result:1 || arg:1) is saved into result:1 */
