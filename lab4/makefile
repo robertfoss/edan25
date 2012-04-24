@@ -16,7 +16,7 @@ PRINT_DEBUG=false
 all: dataflow
 
 # The variable $@ has the value of the target. In this case $@ = psort
-dataflow: dataflow.o
+dataflow: dataflow.o bitset.o list.o rand.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ dataflow.o ${LIBS}
 	./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > c_output.txt
 

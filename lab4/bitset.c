@@ -44,6 +44,7 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
     unsigned int result_offset = arg_bss->offset;
 
     while(arg_l->next != arg_l){
+
         while(result_offset < arg_offset && result_l->next != result_l){
             result_l = result_l->next;
             result_bss = ((BitSetSubset_struct*) result_l->data);
