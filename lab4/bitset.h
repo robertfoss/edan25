@@ -26,10 +26,13 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg);
 bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2);
 
 /** Sets the bit at bit_index, while returning the previous value at bit_index */
-bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index);
+bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val);
 
 /** Returns the value of bit at bit_index */
 bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index);
+
+/** Formats and outputs bs to stout */
+void bitset_print(BitSet_struct* bs);
 
 /** Creates a copy of a bitset */
 BitSet_struct* bitset_copy(BitSet_struct* arg);

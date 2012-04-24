@@ -9,11 +9,37 @@ BitSet_struct* bitset_create(){
 
 
 void bitset_or(BitSet_struct* result, BitSet_struct* arg){
-
+    // TODO:
 }
 
 void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
+	list_t* result_l = result->list;
+    list_t* arg_l = arg->list;
 
+    if(arg_l == NULL)
+        return;
+
+    unsigned int arg_offset = arg_l->data->offset;
+    unsigned int result_offset = result_l->data->offset;
+    while(arg_l->next != arg_l){
+        while(result_offset < arg_offset && result_l->next != result_l){
+            result_l = result_l->next;
+            result_offset = result_l->data->offset;
+        }
+
+        if(arg_offset == result_offset){
+            result_l->data->bit = nand_bits(result_l->data->bit, arg_l->data->bit);
+        } else {
+            BitSetSubset_struct* bss = bitsetsubset_create(arg_offset);
+            bss->bit = ~ ((unsigned int) 0);
+           
+            insert_after(result_l, create_node(bss));
+            result_l->data->bit 
+        }
+        
+        arg_l = arg_l->next;
+        arg_offset = arg_l->data->offset;
+    }
 }
 
 
@@ -24,7 +50,7 @@ bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2){
     if(arg1_l == NULL && arg2_l == NULL)
         return true;
     else if(arg1_l == NULL || arg2_l == NULL)
-        reutrn false;
+        return false;
 
     BitSetSubset_struct* bss1 = arg1_l->data;
     BitSetSubset_struct* bss2 = arg2_l->data;
@@ -44,17 +70,65 @@ bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2){
 
 
 BitSet_struct* bitset_copy(BitSet_struct* arg){
-
+    return NULL; // TODO:
 }
 
 
-bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index){
-    return true;
+bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
+    list_t* bs_l = bs->list;
+    unsigned int bit_offset = bit_index % SUBSET_BITS;
+    unsigned int bit_local_index = (unsigned int) (bit_index / SUBSET_BITS);
+    
+
+    unsigned int bs_offset = bs_l->data->offset;
+    while(bs_offset < bit_offset && bs_l->next != bs_l){
+        bs_l = bs_l->next;
+        bs_offset = bs_l->data->offset;
+    }
+    
+    bool old_bit_val;
+    if(bit_offset == bs_offset){
+        old_bit_val = (bool) bs_l->data->bit & (1 << x);
+        bs_l->data->bit &= ~( ((unsigned int) bit_val) << bit_local_index);
+    } else {
+        BitSetSubset_struct* bss = bitsetsubset_create(arg_offset);
+        bss->bit = 0 & ~( ((unsigned int) bit_val) << bit_local_index);
+        insert_after(result_l, create_node(bss));
+        old_bit_val = false;
+    }
+
+    return old_bit_val;
 }
 
 
 bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
-    return true;
+    list_t* bs_l = bs->list;
+    unsigned int bit_offset = bit_index % SUBSET_BITS;
+    unsigned int bit_local_index = (unsigned int) (bit_index / SUBSET_BITS);
+    
+
+    unsigned int bs_offset = bs_l->data->offset;
+    while(bs_offset < bit_offset && bs_l->next != bs_l){
+        bs_l = bs_l->next;
+        bs_offset = bs_l->data->offset;
+    }
+    
+    bool old_bit_val;
+    if(bit_offset == bs_offset){
+        old_bit_val = (bool) bs_l->data->bit & (1 << x);
+    } else {
+        old_bit_val = false;
+    }
+
+    return old_bit_val;
+}
+
+void bitset_print(BitSet_struct* bs){
+    list_t* bs_l = bs->list;
+    while(bs_l->next != bs_l){
+        for(int i = 0; i < SUBSET_BITS; )
+        bs_l = bs_l->next;
+    }
 }
 
 BitSetSubset_struct* bitsetsubset_create(unsigned int offset){
@@ -64,10 +138,12 @@ BitSetSubset_struct* bitsetsubset_create(unsigned int offset){
     return bss;
 }
 
+inline
 unsigned int nand_bits(unsigned int* uint1, unsigned int* uint2){
     return ~(uint1 & uint2);
 }
 
+inline
 unsigned int or_bits(unsigned int* uint1, unsigned int* uint2){
     return (uint1 | uint2);
 }
