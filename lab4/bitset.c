@@ -7,7 +7,6 @@ BitSet_struct* bitset_create(){
     return 
 }
 
-
 void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     // TODO:
 }
