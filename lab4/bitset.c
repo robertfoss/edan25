@@ -106,7 +106,8 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
     if(bs_l == NULL && bit_val){
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
         bss->bit = 0 & ~( ((unsigned int) bit_val) << bit_local_index);
-        bs_l = create_node(bss);
+        bs->list = create_node(bss);
+        return false;
     } else if (bs_l == NULL){
         return false;
     }
