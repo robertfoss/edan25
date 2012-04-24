@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 typedef struct list_t {
 	struct list_t* next;
 	struct list_t* prev;

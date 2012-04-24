@@ -1,15 +1,18 @@
 //#include <pthread.h>
 #include "bitset.h"
 #include "rand.h"
-#include "list.h"
+//#include "list.h"
 #include <math.h>
 #include <sys/times.h>
 #include <sys/time.h>
 #include <stdbool.h>
 #include <stdlib.h>
+//#include <stdio.h>
+#include <ctype.h>
 
 bool print_input;
 int nvertex;
+int	nsym;
 
 static double sec(void){
 	struct timeval tv;
@@ -22,10 +25,10 @@ typedef struct{
 	bool listed;
 	list_t* pred_list;
 	list_t* succ_list;
-	BitSet_struct in;
-	BitSet_struct out;
-	BitSet_struct use;
-	BitSet_struct def;
+	BitSet_struct* in;
+	BitSet_struct* out;
+	BitSet_struct* use;
+	BitSet_struct* def;
 	//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 } Vertex;
 
@@ -43,23 +46,22 @@ Vertex* new_vertex(int i){
 }
 
 void computeIn(Vertex* u, list_t* worklist){
-	BitSet_struct old;
+	BitSet_struct* old;
 	Vertex* v;
 
 	list_t* tmp_list = u->succ_list->next;
 	while(tmp_list->next != tmp_list){ //End of list
 		v = tmp_list->data;
-		bitset_or(out, v->in);
+		bitset_or(v->out, v->in);
 	}
 
 	old = u->in;
-	BitSet_struct tmp_bs = bitset_create();
-	u->in = tmp_bs;
-	bitset_or(in, out);
-	bitset_and_not(in, def);
-	bitset_or(in, use);
+	u->in = bitset_create();
+	bitset_or(u->in, u->out);
+	bitset_and_not(u->in, u->def);
+	bitset_or(u->in, u->use);
 
-	if(bitset_equals(in, out)){
+	if(bitset_equals(u->in, old)){
 		tmp_list = u->pred_list->next;
 		while(tmp_list->next != tmp_list){ //End of list
 			v = tmp_list->data;
@@ -110,8 +112,8 @@ void print_vertex(Vertex* v){
 }
 
 void connect(Vertex* pred, Vertex* succ){
-	add_last(pred->succ_list, succ);
-	add_last(succ->pred_list, pred);
+	add_last(pred->succ_list, create_node(succ));
+	add_last(succ->pred_list, create_node(pred));
 }
 
 void generateCFG(list_t* vertex_list, int maxsucc, Random r){
@@ -189,7 +191,7 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random r){
 void liveness(list_t* vertex_list){
 	Vertex* u;
 	Vertex* v;
-	list_t* worklist;
+	list_t* worklist = create_node(NULL);
 	double begin;
 	double end;
 
@@ -207,7 +209,7 @@ void liveness(list_t* vertex_list){
 		tmp_list = worklist->next; //worklist.remove(); 
 		u = worklist->data; 
 		remove_node(worklist);
-		worklist = tmp_list
+		worklist = tmp_list;
 
 		u->listed = false;
 		computeIn(u, worklist);
@@ -216,10 +218,10 @@ void liveness(list_t* vertex_list){
 	end = sec();
 }
 
-int main(){
+int main(int ac, char** av){
 
 	int	i;
-	int	nsym;
+	//int	nsym; //global
 	//int	nvertex; //global
 	int	maxsucc;
 	int	nactive;
@@ -233,7 +235,7 @@ int main(){
 	setSeed(r, 1);
 	vertex = create_node(NULL); //First element = NULL
 
-	char* tmp_string;
+	char* tmp_string = "";
 
 	sscanf(av[1], "%d", &nsym); //nsym = Integer.parseInt(args[0]);
 	sscanf(av[2], "%d", &nvertex); //nvertex = Integer.parseInt(args[1]);
@@ -241,14 +243,14 @@ int main(){
 	sscanf(av[4], "%d", &nactive); //nactive = Integer.parseInt(args[3]);
 	//sscanf(av[5], "%d", &nthread); //nthread = Integer.parseInt(args[4]);
 
-	sscanf(av[6], "%d", &tmp_string);
+	sscanf(av[6], "%s", tmp_string);
 	if(tolower(tmp_string[0]) == 't'){
 		print_output = true; //print_output = Boolean.valueOf(args[5]).booleanValue();
 	}else{
 		print_output = false;
 	}
 
-	sscanf(av[7], "%d", &tmp_string);
+	sscanf(av[7], "%s", tmp_string);
 	if(tolower(tmp_string[0]) == 't'){
 		print_input = true;	//print_input = Boolean.valueOf(args[6]).booleanValue();
 	}else{
@@ -256,7 +258,7 @@ int main(){
 	}
 
 /*
-	sscanf(av[8], "%d", &tmp_string);
+	sscanf(av[8], "%s", tmp_string);
 	if(tolower(tmp_string[0]) == 't'){
 		print_debug = true; //print_debug = Boolean.valueOf(args[7]).booleanValue();
 	}else{
@@ -275,7 +277,7 @@ int main(){
 	if(print_output){
 		list_t* tmp_list = vertex->next;
 		for (i = 0; i < nvertex; ++i){
-			print(tmp_list->data);
+			print_vertex(tmp_list->data);
 			tmp_list = tmp_list->next;
 		}
 	}

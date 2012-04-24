@@ -4,7 +4,7 @@
 BitSet_struct* bitset_create(){
     BitSet_struct* bs = malloc(sizeof(BitSet_struct));
     bs->list = NULL;
-    return 
+    return bs;
 }
 
 void bitset_or(BitSet_struct* result, BitSet_struct* arg){
@@ -21,6 +21,7 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
     unsigned int arg_offset = arg_l->data->offset;
     unsigned int result_offset = result_l->data->offset;
     while(arg_l->next != arg_l){
+
         while(result_offset < arg_offset && result_l->next != result_l){
             result_l = result_l->next;
             result_offset = result_l->data->offset;
