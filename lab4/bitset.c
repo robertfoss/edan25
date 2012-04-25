@@ -177,14 +177,14 @@ void bitset_print_helper(list_t* bs_l, unsigned int* last_print_offset, unsigned
 
     while(*last_print_offset < *bs_print_offset){
         printf("%4u -%4u\t|", *last_print_offset, (unsigned int) (*last_print_offset + SUBSET_BITS - 1));
-        for(int j = 0; j < SUBSET_BITS-1; ++j)
+        for(int j = 0; j < SUBSET_BITS; ++j)
             printf("0");
         printf("|\n");
         *last_print_offset += SUBSET_BITS;
     }
 
     printf("%4u -%4u\t|", *bs_print_offset, (unsigned int) (*bs_print_offset + SUBSET_BITS - 1));
-    for(int i = 0; i < SUBSET_BITS-1; ++i){
+    for(int i = 0; i < SUBSET_BITS; ++i){
         if(((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
             printf("1");
         } else {
