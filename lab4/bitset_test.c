@@ -114,7 +114,7 @@ void test_bitset_copy(){
 int main(){
     test_bitset_or();
     test_bitset_and_not();
-    //test_bitset_equals();
+    test_bitset_equals();
     test_bitset_set_bit();
     test_bitset_get_bit();
     //test_bitset_copy();

@@ -79,7 +79,7 @@ bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2){
     BitSetSubset_struct* bss1 = arg1_l->data;
     BitSetSubset_struct* bss2 = arg2_l->data;
     
-    while(arg1_l != NULL){
+    do{
         bss1 = arg1_l->data;
         bss2 = arg2_l->data;
         
@@ -88,8 +88,12 @@ bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2){
         
         arg1_l = arg1_l->next;
         arg2_l = arg2_l->next;
+    }while(arg1_l->next != arg1_l && arg2_l->next != arg2_l);
+
+    if(arg1_l->next == arg1_l && arg2_l->next == arg2_l){
+        return true;
     }
-    return true;
+    return false;
 }
 
 
