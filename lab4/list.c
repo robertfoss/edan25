@@ -23,17 +23,17 @@ void* remove_node(list_t* list){
 }
 
 void insert_after(list_t* target, list_t* new_node){
-    	if (target == target->next){ // Incase of target being the last node.
-		target->next = new_node;
-		new_node->next = new_node;
+    if (target == target->next){ // Incase of target being the last node.
+        target->next = new_node;
+        new_node->next = new_node;
         new_node->prev = target;
-	} else {
-		list_t* old_next = target->next;
-		target->next = new_node;
-		new_node->prev = target;
+    } else {
+        list_t* old_next = target->next;
+        target->next = new_node;
+        new_node->prev = target;
         new_node->next = old_next;
-		old_next->prev = new_node;
-	}
+        old_next->prev = new_node;
+    }
 }
 
 void add_last(list_t* list, list_t* new_node){

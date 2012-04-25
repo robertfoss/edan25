@@ -28,7 +28,55 @@ BitSet_struct* bitset_create(){
 }
 
 void bitset_or(BitSet_struct* result, BitSet_struct* arg){
-    // TODO:
+	list_t* result_l = result->list;
+    list_t* arg_l = arg->list;
+
+    if(arg_l == NULL)
+        return;
+
+    if(result_l == NULL){
+        result = bitset_copy(arg);
+        return;
+    }
+
+    BitSetSubset_struct* result_bss = result_l->data;
+    BitSetSubset_struct* arg_bss = arg_l->data;
+    unsigned int result_offset = result_bss->offset;
+    unsigned int arg_offset = arg_bss->offset;
+
+    do{
+        if(arg_offset == result_offset){
+            result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
+            result_offset = result_bss->offset;
+
+        }else if(arg_offset > result_offset){
+            BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
+            new_bss->bit = arg_bss->bit;
+            insert_after(result_l, create_node(new_bss));
+            result_l = result_l->next; //result_l == new_bss node
+            result_l = result_l->next; //result_l == next in original result_l
+            result_bss = result_l->data;
+            result_offset = result_bss->offset;
+
+        }else{ //arg_offset < result_offset
+            arg_l = arg_l->next;
+            arg_bss = arg_l->data;
+            arg_offset = arg_bss->offset;
+        }
+
+    }while(arg_l->next != arg_l && result_l->next != result_l);
+
+    while(arg_l->next != arg_l){ //reached end of result_l but not arg_l
+        arg_l = arg_l->next;
+        arg_bss = arg_l->data;
+        arg_offset = arg_bss->offset;
+
+        BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
+        new_bss->bit = arg_bss->bit;
+
+        insert_after(result_l, create_node(new_bss));
+        result_l = result_l->next; //result_l == new_bss node (new last in result_l)
+    }
 }
 
 void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
