@@ -73,18 +73,21 @@ void test_bitset_set_bit(){
 
     int bits[] = {1, 3, 63};
     int len = sizeof(bits)/sizeof(int);
-    //printf("len = %d\n", len);
 
     BitSet_struct* bss = bitset_create();
 
     int i;
-    printf("Setting bits: ");
+    printf("Setting bits to true: ");
     for(i = 0; i < len; ++i){
         bitset_set_bit(bss, bits[i], true);
         printf("%d ", bits[i]);
     }
     printf("\n");
 
+    bitset_print(bss);
+
+    printf("Setting bit %d to false\n", bits[0]);
+    bitset_set_bit(bss, bits[0], false);
     bitset_print(bss);
 }
 
