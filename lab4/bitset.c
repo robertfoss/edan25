@@ -153,8 +153,8 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
 
 bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
     list_t* bs_l = bs->list;
-    unsigned int bit_offset = bit_index % (SUBSET_BITS);
-    
+    unsigned int bit_offset = bit_index / SUBSET_BITS;
+    unsigned int bit_local_index = (unsigned int) (bit_index % SUBSET_BITS);
 
     unsigned int bs_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     while(bs_offset < bit_offset && bs_l->next != bs_l){
@@ -164,7 +164,7 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
     
     bool old_bit_val;
     if(bit_offset == bs_offset){
-        old_bit_val = (bool) ((BitSetSubset_struct*) bs_l->data)->bit & (1 << bit_index);
+        old_bit_val = (bool) (((BitSetSubset_struct*) bs_l->data)->bit & (1 << bit_local_index));
     } else {
         old_bit_val = false;
     }
