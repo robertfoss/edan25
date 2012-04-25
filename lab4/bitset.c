@@ -31,6 +31,20 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     // TODO:
 }
 
+static
+BitSetSubset_struct* find_bss(BitSet_struct* bs, unsigned int offset){
+	list_t* bs_l = bs->list;
+    short done = 1;
+    while(done > 0){
+        if (bs_l->next == bs_l)
+            --done;
+        if ( ((BitSetSubset_struct*) bs_l->data)->offset == offset)
+            return (BitSetSubset_struct*) bs_l->data;
+        bs_l = bs_l->next;
+    }
+    return NULL;
+}
+
 void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
 	list_t* result_l = result->list;
     list_t* arg_l = arg->list;
@@ -41,28 +55,56 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
 
     BitSetSubset_struct* result_bss = ((BitSetSubset_struct*) result_l->data);
     BitSetSubset_struct* arg_bss = ((BitSetSubset_struct*) arg_l->data);
-    unsigned int arg_offset = result_bss->offset;
-    unsigned int result_offset = arg_bss->offset;
 
-    while(arg_l->next != arg_l){
+    unsigned int result_offset = 0;
+    unsigned int found_result_offset = result_bss->offset;
+    unsigned int max_result_offset = result_bss->offset;
 
-        while(result_offset < arg_offset && result_l->next != result_l){
-            result_l = result_l->next;
-            result_bss = ((BitSetSubset_struct*) result_l->data);
-            result_offset = result_bss->offset;
-        }
-
-        if(arg_offset == result_offset){
-            result_bss->bit = nand_bits( result_bss->bit, arg_bss->bit);
-        } else {
-            BitSetSubset_struct* bss = bitsetsubset_create(arg_offset);
-            bss->bit = ~ ((unsigned int) 0);
-            insert_after(result_l, create_node(bss));
-        }
-        
+    unsigned int arg_offset = 0;
+    unsigned int found_arg_offset = arg_bss->offset;
+    unsigned int max_arg_offset = arg_bss->offset;
+    
+    
+    short done = 1;
+    while(done > 0){
+        if (arg_l->next == arg_l)
+            --done;
+        max_arg_offset = ((BitSetSubset_struct*) arg_l->data)->offset;
         arg_l = arg_l->next;
-        arg_bss = ((BitSetSubset_struct*) arg_l->data);
-        arg_offset = arg_bss->offset;
+    }
+    arg_l = arg_l->next;
+
+    done = 1;
+    while(done > 0){
+        if (result_l->next == result_l)
+            --done;
+        max_result_offset = ((BitSetSubset_struct*) result_l->data)->offset;
+        result_l = result_l->next;
+    }
+    result_l = result_l->next;
+
+    BitSetSubset_struct* tmp_result_bss;
+    BitSetSubset_struct* tmp_arg_bss;
+    unsigned int max_offset = (max_arg_offset > max_result_offset) ? max_arg_offset : max_result_offset;
+    for(unsigned int i = 0; i < max_offset; i+=SUBSET_BITS){
+        tmp_result_bss = find_bss(result, i);
+        tmp_arg_bss = find_bss(arg, i);
+        if (tmp_result_bss == NULL && tmp_arg_bss == NULL){
+            BitSetSubset_struct* bss = bitsetsubset_create(i);
+            bss->bit =  ~ 0; //TODO: does this even work?
+            insert_after(create_node(bss), result_l);
+        } else if (tmp_result_bss == NULL){
+            BitSetSubset_struct* bss = bitsetsubset_create(i);
+            bss->bit =  ~ ((BitSetSubset_struct*) arg_l->data)->bit; //TODO: does this even work?
+            insert_after(create_node(bss), result_l);
+        } else if (tmp_arg_bss == NULL){
+            tmp_result_bss->bit =  ~ ((BitSetSubset_struct*) result_l->data)->bit; //TODO: does this even work?
+        } else {
+            BitSetSubset_struct* tmp_r = ((BitSetSubset_struct*) result_l->data);
+            BitSetSubset_struct* tmp_a = ((BitSetSubset_struct*) arg_l->data);
+            tmp_result_bss->bit = nand_bits(tmp_r->bit, tmp_a->bit);
+        }
+        result_l = result_l->next;
     }
 }
 
@@ -204,15 +246,33 @@ void bitset_print(BitSet_struct* bs){
 
     unsigned int last_print_offset = 0;
     unsigned int bs_print_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
-    while(bs_l->next != bs_l){
+    short done = 1;
+    while(done > 0){
+        if (bs_l->next == bs_l)
+            --done;
         
-        bitset_print_helper(bs_l, &last_print_offset, &bs_print_offset);
+        while(last_print_offset < bs_print_offset){
+            printf("%4u -%4u\t|", last_print_offset, (unsigned int) (last_print_offset + SUBSET_BITS - 1));
+            for(int j = 0; j < SUBSET_BITS; ++j)
+                printf("0");
+            printf("|\n");
+            last_print_offset += SUBSET_BITS;
+        }
 
+        printf("%4u -%4u\t|", bs_print_offset, (unsigned int) (bs_print_offset + SUBSET_BITS - 1));
+        for(int i = 0; i < SUBSET_BITS; ++i){
+            if(((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
+                printf("1");
+            } else {
+                printf("0");
+            }
+        }
+        printf("|\n");
+        last_print_offset += SUBSET_BITS;
 
         bs_l = bs_l->next;
         bs_print_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     }
-    bitset_print_helper(bs_l, &last_print_offset, &bs_print_offset);
 }
 
 
