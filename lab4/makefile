@@ -26,10 +26,13 @@ dataflow: dataflow.o bitset.o list.o rand.o
 
 bitset_test: bitset_test.o bitset.o list.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ bitset_test.o bitset.o list.o ${LIBS}
+
+list_test: list_test.o list.o
+	${CC} ${CFLAGS} ${INCLUDES} -o $@ list_test.o list.o ${LIBS}
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
 
 clean:
-	rm -f *.o dataflow *~
+	rm -f *.o dataflow bitset_test list_test *~
 
 # DO NOT DELETE
