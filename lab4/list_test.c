@@ -257,12 +257,12 @@ void test7(){
     insert_before(fst, tmp);
     fst = tmp;
 
-    tmp = fst;
+    /*tmp = fst;
     while(tmp->next != tmp){
         printf("data: %d\n", (int)(tmp->data));
         tmp = tmp->next;
     }
-    printf("data: %d\n", (int)(tmp->data));
+    printf("data: %d\n", (int)(tmp->data));*/
 
     tmp = fst;
     assert((unsigned int) (tmp->data) == 3);
@@ -273,8 +273,6 @@ void test7(){
     tmp =tmp->next;
     assert((unsigned int) (tmp->data) == 1);
     
-
-
     printf("test7 - Passed -- fancy list inserting (before and after) and ordering.\n");
 }
 
