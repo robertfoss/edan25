@@ -5,9 +5,9 @@
 
 
 void test_bitset_or(){
-    printf("Test bitset_or: \t");
+    printf("Test bitset_or(): \t");
 
-    printf("OR 2 bitsets of differing length. \t\t");
+    printf("2 bitsets of differing length. \t\t");
     BitSet_struct* bs1 = bitset_create();
     bitset_set_bit(bs1, 1, true);
     bitset_set_bit(bs1, 5, true);
@@ -32,7 +32,7 @@ void test_bitset_or(){
     assert(bitset_get_bit(bs1,62) == false);
     printf("PASSED\n");
 
-    printf("\t\tOr sparse bitset with reg. bitset \t\t");
+    printf("\t\t\tsparse bitset with regular bitset. \t");
     bs1 = bitset_create();
     bitset_set_bit(bs1, 55, true);
 
@@ -54,12 +54,45 @@ void test_bitset_or(){
     assert(bitset_get_bit(bs1,61) == true);
     assert(bitset_get_bit(bs1,62) == false);
     printf("PASSED\n");
+
+
+    printf("\t\t\tsparse bitset with very long arg. \t");
+    bs1 = bitset_create();
+    bitset_set_bit(bs1, 55, true);
+
+    bs2 = bitset_create();
+    bitset_set_bit(bs2, 1, true);
+    bitset_set_bit(bs2, 3, true);
+    bitset_set_bit(bs2, 61, true);
+    bitset_set_bit(bs2, 127, true);
+    bitset_set_bit(bs2, 127+SUBSET_BITS, true);
+    bitset_set_bit(bs2, 127+2*SUBSET_BITS, true);
+    bitset_set_bit(bs2, 127+4*SUBSET_BITS, true);
+
+    bitset_or(bs1, bs2);
+    assert(bitset_get_bit(bs1,0) == false);
+    assert(bitset_get_bit(bs1,1) == true);
+    assert(bitset_get_bit(bs1,2) == false);
+    assert(bitset_get_bit(bs1,3) == true);
+    assert(bitset_get_bit(bs1,4) == false);
+    assert(bitset_get_bit(bs1,54) == false);
+    assert(bitset_get_bit(bs1,55) == true);
+    assert(bitset_get_bit(bs1,56) == false);
+    assert(bitset_get_bit(bs1,60) == false);
+    assert(bitset_get_bit(bs1,61) == true);
+    assert(bitset_get_bit(bs1,62) == false);
+
+    assert(bitset_get_bit(bs1, 127+SUBSET_BITS) == true);
+    assert(bitset_get_bit(bs1, 127+2*SUBSET_BITS) == true);
+    assert(bitset_get_bit(bs1, 127+3*SUBSET_BITS) == false);
+    assert(bitset_get_bit(bs1, 127+4*SUBSET_BITS) == true);
+    printf("PASSED\n");
 }
 
 void test_bitset_and_not(){
     printf("Test bitset_not_and(): \t");
 
-    printf("NAND 2 bitsets of differing length. \t\t");
+    printf("2 bitsets of differing length. \t\t");
     BitSet_struct* bs1 = bitset_create();
     bitset_set_bit(bs1, 3, true);
     bitset_set_bit(bs1, 5, true);
@@ -75,16 +108,16 @@ void test_bitset_and_not(){
     bitset_and_not(bs1, bs2);
 
     assert(bitset_get_bit(bs1,0) == false);
-    assert(bitset_get_bit(bs1,1) == true);
+    assert(bitset_get_bit(bs1,1) == false);
     assert(bitset_get_bit(bs1,3) == false);
     assert(bitset_get_bit(bs1,5) == true);
     assert(bitset_get_bit(bs1,6) == false);
     assert(bitset_get_bit(bs1,33) == false);
     assert(bitset_get_bit(bs1,36) == true);
-    assert(bitset_get_bit(bs1,65) == true);
+    assert(bitset_get_bit(bs1,65) == false);
     printf("PASSED\n");
 
-    printf("\t\tNAND 2 sparse bitset with reg. bitset. \t");
+    printf("\t\t\tsparse bitsets with regular bitset. \t");
     bs1 = bitset_create();
     bitset_set_bit(bs1, 36, true);
     bitset_set_bit(bs1, 40, true);
@@ -144,14 +177,23 @@ void test_bitset_set_bit(){
     printf("setting %d bits to true. \t\t", len_true);
     for(int i = 0; i < len_true; ++i){
         bitset_set_bit(bs, bits_true[i], true);
+        bitset_set_bit(bs, bits_true[i+1], false);
     }
-    bitset_print(bs);
     for(int i = 0; i < len_true; ++i){
         assert(bitset_get_bit(bs, bits_true[i]) == true);
+    }  
+    printf("PASSED\n");
+
+
+    printf("\t\t\tsetting %d bits to false. \t\t", len_false);
+    for(int i = 0; i < len_true; ++i){
+        bitset_set_bit(bs, bits_true[i], false);
+    }
+    for(int i = 0; i < len_true; ++i){
+        assert(bitset_get_bit(bs, bits_false[i]) == false);
     }
     printf("PASSED\n");
-    
-    
+
 }
 
 void test_bitset_get_bit(){
@@ -166,6 +208,34 @@ void test_bitset_get_bit(){
     assert(bitset_get_bit(bs, 3) == true);
     assert(bitset_get_bit(bs, 5) == false);
     printf("PASSED\n");
+
+
+
+    printf("\t\t\tsparse get test. \t\t\t");
+    bs = bitset_create();
+    bitset_set_bit(bs, 1, true);
+    bitset_set_bit(bs, 3, true);
+    bitset_set_bit(bs, 31, true);
+    bitset_set_bit(bs, 63, true);
+    bitset_set_bit(bs, 128, true);
+
+    assert(bitset_get_bit(bs, 1) == true);
+    assert(bitset_get_bit(bs, 2) == false);
+    assert(bitset_get_bit(bs, 3) == true);
+    assert(bitset_get_bit(bs, 5) == false);
+    assert(bitset_get_bit(bs, 30) == false);
+    assert(bitset_get_bit(bs, 5) == false);
+    assert(bitset_get_bit(bs, 32) == false);
+    assert(bitset_get_bit(bs, 62) == false);
+    assert(bitset_get_bit(bs, 63) == true);
+    assert(bitset_get_bit(bs, 64) == false);
+    assert(bitset_get_bit(bs, 127) == false);
+    assert(bitset_get_bit(bs, 128) == true);
+    assert(bitset_get_bit(bs, 129) == false);
+    printf("PASSED\n");
+
+
+
 }
 
 void test_bitset_copy(){
@@ -181,7 +251,7 @@ void test_bitset_copy(){
     assert(&bs != &bs_cp);
     printf("PASSED\n");
 
-
+    
     printf("\t\t\tsparse copy test. \t\t\t");
     bs = bitset_create();
     bitset_set_bit(bs, 1, true);
@@ -192,6 +262,7 @@ void test_bitset_copy(){
 
 
     bs_cp = bitset_copy(bs);
+
 
     assert(bitset_equals(bs, bs_cp) == true);
     assert(&bs != &bs_cp);
