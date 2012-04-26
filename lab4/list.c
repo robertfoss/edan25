@@ -36,6 +36,18 @@ void insert_after(list_t* target, list_t* new_node){
     }
 }
 
+void insert_before(list_t* target, list_t* new_node){
+    if (target == target->prev){ // Incase of target being the first node.
+        new_node->prev = new_node;
+        target->prev = new_node;
+        new_node->next = target;
+    } else {
+        new_node->prev = target->prev;
+        target->prev = new_node;
+        new_node->next = target;
+    }
+}
+
 void add_last(list_t* list, list_t* new_node){
 	list_t* tmp = list;
 	while(tmp->next != tmp){
