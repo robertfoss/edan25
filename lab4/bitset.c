@@ -110,22 +110,18 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
     unsigned int result_offset = result_bss->offset;
     unsigned int arg_offset = arg_bss->offset;
 
-    short result_done = 2;
-    short arg_done = 2;
+    short result_done = 1;
+    short arg_done = 1;
     do{
-        printf("r_off: %u\t a_off: %u\n", result_offset, arg_offset);
+        printf("\na_off: %u\tr_off: %u\n", arg_offset, result_offset);
         if(arg_offset == result_offset){
             printf("arg_offset == result_offset\n");
             result_bss->bit = nand_bits(result_bss->bit, arg_bss->bit);
             result_offset = result_bss->offset;
 
             result_l = result_l->next;
-            result_bss = result_l->data;
-            result_offset = result_bss->offset;
 
             arg_l = arg_l->next;
-            arg_bss = arg_l->data;
-            arg_offset = arg_bss->offset;
 
         }else if(arg_offset > result_offset){
             printf("arg_offset > result_offset\n");
@@ -134,23 +130,26 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
             insert_after(result_l, create_node(new_bss));
             result_l = result_l->next; //result_l == new_bss node
             //result_l = result_l->next; //result_l == next in original result_l
-            result_bss = result_l->data;
-            result_offset = result_bss->offset;
 
-        }else{ //arg_offset < result_offset
+        }else { //arg_offset < result_offset
             printf("arg_offset < result_offset\n");
             BitSetSubset_struct* new_bss = bitsetsubset_create(result_offset + SUBSET_BITS);
             new_bss->bit = (unsigned int) -1;
-            insert_before(result_l, create_node(new_bss));
+            list_t* new_list_node = create_node(new_bss);
+            insert_before(result_l, new_list_node);
 
-            //result_l = result_l->next;
-            //result_bss = result_l->data;
-            //result_offset = result_bss->offset;
-
+            if(result->list == result_l) // If result_l is the first bitsetsubset in an bitset.
+                result->list = new_list_node;
+        
+            result_l = result_l->next;
             arg_l = arg_l->next;
+
+        }
+
             arg_bss = arg_l->data;
             arg_offset = arg_bss->offset;
-        }
+            result_bss = result_l->data;
+            result_offset = result_bss->offset;
 
         if (result_l->next == result_l && result_done > 0)
             --result_done;

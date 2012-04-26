@@ -38,10 +38,12 @@ void insert_after(list_t* target, list_t* new_node){
 
 void insert_before(list_t* target, list_t* new_node){
     if (target == target->prev){ // Incase of target being the first node.
+        printf("insert before, target is first node\n");
         new_node->prev = new_node;
         target->prev = new_node;
         new_node->next = target;
     } else {
+        printf("insert before, else\n");
         new_node->prev = target->prev;
         target->prev = new_node;
         new_node->next = target;

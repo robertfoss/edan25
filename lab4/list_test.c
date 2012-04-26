@@ -236,6 +236,48 @@ void test6(){
     printf("test6 - Passed -- basic list inserting (before) and ordering.\n");
 }
 
+void test7(){
+    int nbr = 0;
+    list_t* fst = create_node((void*)nbr);
+    list_t* lst = fst;
+    list_t* tmp = fst;
+
+    int nbr1 = 1;
+    tmp = create_node((void*)nbr1);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    int nbr2 = 2;
+    tmp = create_node((void*)nbr2);
+    insert_before(lst, tmp);
+    //lst = tmp;
+
+    int nbr3 = 3;
+    tmp = create_node((void*)nbr3);
+    insert_before(fst, tmp);
+    fst = tmp;
+
+    tmp = fst;
+    while(tmp->next != tmp){
+        printf("data: %d\n", (int)(tmp->data));
+        tmp = tmp->next;
+    }
+    printf("data: %d\n", (int)(tmp->data));
+
+    tmp = fst;
+    assert((unsigned int) (tmp->data) == 3);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 0);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1);
+    
+
+
+    printf("test7 - Passed -- fancy list inserting (before and after) and ordering.\n");
+}
+
 int main(){
 
     test1(); // Test basic list inserting and ordering.
@@ -244,4 +286,5 @@ int main(){
     test4(); // Test removing an element from the list.
     test5(); // Test removing the last element from the list.
     test6(); // Test basic list inserting (before) and ordering.
+    test7(); // Test fancy list inserting (before and after) and ordering.
 }
