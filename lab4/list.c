@@ -10,12 +10,14 @@ list_t* create_node(void* data){
 void* remove_node(list_t* list){
     void* data_tmp = list->data;
 
-    if(list->next != list){
+    if(list->next == list){
+        list->prev->next = list->prev;
+    } else if (list->prev == list) {
+        list->next->prev = list->next;
+    } else {
 	    list->prev->next = list->next;
 	    list->next->prev = list->prev;
 	    list->next = list->prev = list;
-    } else {
-        list->prev->next = list->prev;
     }
 
     free(list);
