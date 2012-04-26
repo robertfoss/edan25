@@ -45,12 +45,14 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     unsigned int arg_offset = arg_bss->offset;
 
     do{
-        printf("ro: %u\tao: %u\n", result_offset, arg_offset);
+        //printf("ro: %u\tao: %u\n", result_offset, arg_offset);
         if(arg_offset == result_offset){
+            //printf("arg_offset == result_offset\n");
             result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
             result_offset = result_bss->offset;
 
         }else if(arg_offset > result_offset){
+            printf("arg_offset > result_offset\n");
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
             insert_after(result_l, create_node(new_bss));
@@ -58,17 +60,20 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
             result_l = result_l->next; //result_l == next in original result_l
             result_bss = result_l->data;
             result_offset = result_bss->offset;
-            printf("ro inside #1: %u\n", result_offset);
 
         }else{ //arg_offset < result_offset
+            //printf("arg_offset < result_offset\n");
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
-            insert_before(result_l, create_node(new_bss));
+            list_t* new_node = create_node(new_bss);
+            insert_before(result_l, new_node);
+            if(result_l == result->list){
+                result->list = new_node;
+            }
            // result_l = result_l->next; //result_l == new_bss node
            // result_l = result_l->next; //result_l == next in original result_l
             //result_bss = result_l->data;
             //result_offset = result_bss->offset;
-            printf("ro inside #2: %u\n", result_offset);
 
             arg_l = arg_l->next;
             arg_bss = arg_l->data;
@@ -77,7 +82,14 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
 
     }while(arg_l->next != arg_l && result_l->next != result_l);
 
+    if(arg_offset == result_offset){
+        //printf("arg_offset == result_offset #222\n");
+        result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
+        result_offset = result_bss->offset;
+    }
+
     while(arg_l->next != arg_l){ //reached end of result_l but not arg_l
+        arg_l = arg_l->next;
         arg_bss = arg_l->data;
         arg_offset = arg_bss->offset;
 
@@ -86,8 +98,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
 
         insert_after(result_l, create_node(new_bss));
         result_l = result_l->next; //result_l == new_bss node (new last in result_l)
-
-        arg_l = arg_l->next;
     }
 }
 

@@ -57,7 +57,7 @@ void test_bitset_or(){
     bitset_print(bss2);
     printf("=\n");
     
-    bitset_or(bss2, bss1);
+    bitset_or(bss1, bss2);
     bitset_print(bss1);
 }
 
