@@ -10,6 +10,17 @@ unsigned int nand_bits(unsigned int uint1, unsigned int uint2){
 }
 
 inline static
+unsigned int and_bits(unsigned int uint1, unsigned int uint2){
+    return (uint1 & uint2);
+}
+
+inline static
+unsigned int not_bits(unsigned int uint){
+    return ~uint;
+}
+
+
+inline static
 unsigned int or_bits(unsigned int uint1, unsigned int uint2){
     return (uint1 | uint2);
 }
@@ -131,67 +142,43 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
     BitSetSubset_struct* arg_bss = arg_l->data;
     unsigned int result_offset = result_bss->offset;
     unsigned int arg_offset = arg_bss->offset;
+    unsigned int tmp_bits;
 
-    short result_done = 1;
-    short arg_done = 1;
     do{
-        printf("\na_off: %u\tr_off: %u\n", arg_offset, result_offset);
+        //printf("\na_off: %u\tr_off: %u\n", arg_offset, result_offset);
         if(arg_offset == result_offset){
-            printf("arg_offset == result_offset\n");
-            result_bss->bit = nand_bits(result_bss->bit, arg_bss->bit);
-            result_offset = result_bss->offset;
+            //printf("arg_offset == result_offset\n");
+            tmp_bits = and_bits(result_bss->bit, arg_bss->bit);
+            tmp_bits = not_bits(tmp_bits);
+            tmp_bits = and_bits(tmp_bits, result_bss->bit);
+            result_bss->bit = tmp_bits;
 
             result_l = result_l->next;
-
             arg_l = arg_l->next;
 
         }else if(arg_offset > result_offset){
-            printf("arg_offset > result_offset\n");
-            BitSetSubset_struct* new_bss = bitsetsubset_create(result_offset + SUBSET_BITS);
-            new_bss->bit = (unsigned int) -1;
-            insert_after(result_l, create_node(new_bss));
-            result_l = result_l->next; //result_l == new_bss node
-            //result_l = result_l->next; //result_l == next in original result_l
+            result_l = result_l->next;
+            //printf("arg_offset > result_offset\n");
 
         }else { //arg_offset < result_offset
-            printf("arg_offset < result_offset\n");
-            BitSetSubset_struct* new_bss = bitsetsubset_create(result_offset + SUBSET_BITS);
-            new_bss->bit = (unsigned int) -1;
-            list_t* new_list_node = create_node(new_bss);
-            insert_before(result_l, new_list_node);
-
-            if(result->list == result_l) // If result_l is the first bitsetsubset in an bitset.
-                result->list = new_list_node;
-        
-            result_l = result_l->next;
             arg_l = arg_l->next;
-
+            //printf("arg_offset < result_offset\n");
         }
 
-            arg_bss = arg_l->data;
-            arg_offset = arg_bss->offset;
-            result_bss = result_l->data;
-            result_offset = result_bss->offset;
-
-        if (result_l->next == result_l && result_done > 0)
-            --result_done;
-        if (arg_l->next == arg_l && arg_done > 0)
-            --arg_done;
-    }while((arg_done > 0 || result_done > 0));// && arg_offset != result_offset);
-
-    /*
-    while(arg_l->next != arg_l){ //reached end of result_l but not arg_l
-        printf("while(arg_l->next != arg_l)\n");
-        arg_l = arg_l->next;
         arg_bss = arg_l->data;
         arg_offset = arg_bss->offset;
+        result_bss = result_l->data;
+        result_offset = result_bss->offset;
 
-        BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
-        new_bss->bit = (unsigned int) -1;
+    }while(arg_l->next != arg_l && result_l->next != result_l);
 
-        insert_after(result_l, create_node(new_bss));
-        result_l = result_l->next; //result_l == new_bss node (new last in result_l)
-    }*/
+    if(arg_offset == result_offset){
+        tmp_bits = and_bits(result_bss->bit, arg_bss->bit);
+        tmp_bits = not_bits(tmp_bits);
+        tmp_bits = and_bits(tmp_bits, result_bss->bit);
+        result_bss->bit = tmp_bits;
+    }
+
 }
 
 
