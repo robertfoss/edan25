@@ -210,7 +210,6 @@ void test_bitset_get_bit(){
     printf("PASSED\n");
 
 
-
     printf("\t\t\tsparse get test. \t\t\t");
     bs = bitset_create();
     bitset_set_bit(bs, 1, true);
@@ -233,9 +232,6 @@ void test_bitset_get_bit(){
     assert(bitset_get_bit(bs, 128) == true);
     assert(bitset_get_bit(bs, 129) == false);
     printf("PASSED\n");
-
-
-
 }
 
 void test_bitset_copy(){
@@ -260,9 +256,7 @@ void test_bitset_copy(){
     bitset_set_bit(bs, 32, true);
     bitset_set_bit(bs, 128, true);
 
-
     bs_cp = bitset_copy(bs);
-
 
     assert(bitset_equals(bs, bs_cp) == true);
     assert(&bs != &bs_cp);
