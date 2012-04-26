@@ -20,6 +20,9 @@ void* remove_node(list_t* list);
 /** Inject new_node into a list after target */
 void insert_after(list_t* target, list_t* new_node);
 
+/** Inject new_node into a list before target */
+void insert_before(list_t* target, list_t* new_node);
+
 /** Insert an element last in the list */
 void add_last(list_t* list, list_t* new_node);
 

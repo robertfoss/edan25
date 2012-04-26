@@ -47,7 +47,7 @@ void test1(){
         tmp = tmp->next;
     }
     assert((unsigned int) (tmp->data) == counter++);
-    printf("test1 - Passed -- basic list inserting and ordering.\n");
+    printf("test1 - Passed -- basic list inserting (after) and ordering.\n");
 }
 
 void test2(){
@@ -197,6 +197,45 @@ void test5(){
     printf("test5 - Passed -- removing the last element from the list.\n");
 }
 
+
+void test6(){
+    int nbr = 0;
+    list_t* fst = create_node((void*)nbr);
+    list_t* lst = fst;
+    list_t* tmp = fst;
+
+    int nbr1 = 1;
+    tmp = create_node((void*)nbr1);
+    insert_before(lst, tmp);
+    lst = tmp;
+
+    int nbr2 = 2;
+    tmp = create_node((void*)nbr2);
+    insert_before(lst, tmp);
+    lst = tmp;
+
+    int nbr3 = 3;
+    tmp = create_node((void*)nbr3);
+    insert_before(lst, tmp);
+    lst = tmp;
+
+    int nbr4 = 4;
+    tmp = create_node((void*)nbr4);
+    insert_before(lst, tmp);
+    lst = tmp;
+
+    unsigned int counter = 4;
+
+    tmp = lst;
+
+    while(tmp->next != tmp){
+        assert((unsigned int) (tmp->data) == counter--);
+        tmp = tmp->next;
+    }
+    assert((unsigned int) (tmp->data) == counter--);
+    printf("test6 - Passed -- basic list inserting (before) and ordering.\n");
+}
+
 int main(){
 
     test1(); // Test basic list inserting and ordering.
@@ -204,4 +243,5 @@ int main(){
     test3(); // Test removing elements from list (backward using prev).
     test4(); // Test removing an element from the list.
     test5(); // Test removing the last element from the list.
+    test6(); // Test basic list inserting (before) and ordering.
 }
