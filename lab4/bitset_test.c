@@ -31,9 +31,6 @@ void test_bitset_or(){
     bitset_set_bit(bss1, 20, true);
 
     bss2 = bitset_create();
-    bitset_set_bit(bss2, 1, true);
-    bitset_set_bit(bss2, 3, true);
-    bitset_set_bit(bss2, 666, true);
 
     printf("******\n");
     bitset_print(bss1);
@@ -41,7 +38,7 @@ void test_bitset_or(){
     bitset_print(bss2);
     printf("=\n");
     
-    bitset_or(bss1, bss2);
+    bitset_or(bss2, bss1);
     bitset_print(bss1);
 }
 
@@ -133,15 +130,16 @@ void test_bitset_copy(){
     BitSet_struct* bss_cp = bitset_copy(bss);
 
     assert(bitset_equals(bss, bss_cp) == true);
+    assert(&bss != &bss_cp);
 }
 
 int main(){
     test_bitset_or();
     //test_bitset_and_not();
-    //test_bitset_equals();
-    //test_bitset_set_bit();
-    //test_bitset_get_bit();
-    //test_bitset_copy();
+    test_bitset_equals();
+    test_bitset_set_bit();
+    test_bitset_get_bit();
+    test_bitset_copy();
 }
 
 

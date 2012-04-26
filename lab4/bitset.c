@@ -188,7 +188,30 @@ bool bitset_equals(BitSet_struct* arg1, BitSet_struct* arg2){
 
 
 BitSet_struct* bitset_copy(BitSet_struct* arg){
-    return NULL; // TODO:
+    BitSet_struct* new_bss = bitset_create();
+
+    if(arg == NULL){
+        return new_bss;
+    }
+
+    list_t* arg_l = arg->list;
+
+    do{
+//((BitSetSubset_struct*) bs_l->data)->offset
+        BitSetSubset_struct* b_sub = bitsetsubset_create(((BitSetSubset_struct*) arg_l->data)->offset);
+        b_sub->bit = ((BitSetSubset_struct*) arg_l->data)->bit;
+
+        if(new_bss->list == NULL){
+            new_bss->list = create_node(b_sub);
+        }else{
+            add_last(new_bss->list, create_node(b_sub));
+        }
+
+        arg_l = arg_l->next;
+
+    }while(arg_l->next != arg_l);
+
+    return new_bss;
 }
 
 
