@@ -13,7 +13,7 @@ void print_list(list_t* input){
 }
 
 
-void test1(){
+void test_insert_after(){
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
@@ -50,7 +50,10 @@ void test1(){
     printf("test1 - Passed -- basic list inserting (after) and ordering.\n");
 }
 
-void test2(){
+void test_remove_node(){
+    printf("Test remove_node(): \t");
+
+    printf("remove a single node. \t\t\t");
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
@@ -87,118 +90,92 @@ void test2(){
     tmp = tmp->next;
     assert((unsigned int) (tmp->data) == 4);
     tmp = tmp->next;
+    printf("PASSED\n");
 
-    printf("test2 - Passed -- removing elements from list and list linkage (forward using next).\n");
-}
+    printf("\t\t\tremove last node. \t\t\t");
+    nbr = 0;
+    tmp = lst = fst = create_node((void*)nbr);
 
-void test3(){
-    int nbr = 0;
-    list_t* fst = create_node((void*)nbr);
-    list_t* lst = fst;
-    list_t* tmp = fst;
-
-    int nbr1 = 1;
+    nbr1 = 1;
     tmp = create_node((void*)nbr1);
     insert_after(lst, tmp);
     lst = tmp;
 
-    int nbr2 = 2;
+    nbr2 = 2;
     tmp = create_node((void*)nbr2);
     insert_after(lst, tmp);
     lst = tmp;
 
-    int nbr3 = 3;
+    nbr3 = 3;
     tmp = create_node((void*)nbr3);
     insert_after(lst, tmp);
     lst = tmp;
 
-    int nbr4 = 4;
+    nbr4 = 4;
     tmp = create_node((void*)nbr4);
     insert_after(lst, tmp);
     lst = tmp;
 
-    remove_node(lst->prev->prev);
+    remove_node(lst);
 
     tmp = fst;
     assert((unsigned int) (tmp->data) == 0);
     tmp = tmp->next;
     assert((unsigned int) (tmp->data) == 1);
     tmp = tmp->next;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp = tmp->next;
     assert((unsigned int) (tmp->data) == 3);
     tmp = tmp->next;
+    assert((unsigned int) (tmp->data) == 3); // Make sure end->next = end.
+    printf("PASSED\n");
+
+
+    printf("\t\t\tremove 2 first nodes. \t\t\t");
+    nbr = 0;
+    tmp = lst = fst = create_node((void*)nbr);
+
+    nbr1 = 1;
+    tmp = create_node((void*)nbr1);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    nbr2 = 2;
+    tmp = create_node((void*)nbr2);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    nbr3 = 3;
+    tmp = create_node((void*)nbr3);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    nbr4 = 4;
+    tmp = create_node((void*)nbr4);
+    insert_after(lst, tmp);
+    lst = tmp;
+    
+    tmp = fst->next->next;
+    remove_node(fst->next);
+    remove_node(fst);
+
+    tmp = lst;
     assert((unsigned int) (tmp->data) == 4);
-    tmp = tmp->next;
-
-    printf("test3 - Passed -- removing elements from list and list linkage (backward using prev).\n");
-}
-
-
-void test4(){
-    int nbr = 0;
-    list_t* fst = create_node((void*)nbr);
-    list_t* lst = fst;
-    list_t* tmp = fst;
-
-    int nbr1 = 1;
-    tmp = create_node((void*)nbr1);
-    insert_after(lst, tmp);
-    lst = tmp;
-
-    int nbr2 = 2;
-    tmp = create_node((void*)nbr2);
-    insert_after(lst, tmp);
-    lst = tmp;
-
-    int nbr3 = 3;
-    tmp = create_node((void*)nbr3);
-    insert_after(lst, tmp);
-    lst = tmp;
-    
-    remove_node(lst->prev);
-
-    assert((unsigned int) (fst->next->next->data) == 3);
-    assert((unsigned int) (fst->next->prev->data) == 0);
-
-    assert((unsigned int) (lst->next->data) == 3);
-    assert((unsigned int) (lst->prev->data) == 1);
-
-    printf("test4 - Passed -- removing an element from the list.\n");
-}
-
-
-void test5(){
-    int nbr = 0;
-    list_t* fst = create_node((void*)nbr);
-    list_t* lst = fst;
-    list_t* tmp = fst;
-
-    int nbr1 = 1;
-    tmp = create_node((void*)nbr1);
-    insert_after(lst, tmp);
-    lst = tmp;
-
-    int nbr2 = 2;
-    tmp = create_node((void*)nbr2);
-    insert_after(lst, tmp);
-    lst = tmp;
-
-    int nbr3 = 3;
-    tmp = create_node((void*)nbr3);
-    insert_after(lst, tmp);
-    lst = tmp;
-    
     tmp = tmp->prev;
+    assert((unsigned int) (tmp->data) == 3);
+    tmp = tmp->prev;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp = tmp->prev;
+    assert((unsigned int) (tmp->data) == 2); // Make sure end->prev = prev.
+    printf("PASSED\n");
 
-    remove_node(lst);
-
-    assert((unsigned int) (tmp->prev->data) == 1);
-    assert((unsigned int) (tmp->next->data) == 2);
-
-    printf("test5 - Passed -- removing the last element from the list.\n");
 }
 
 
-void test6(){
+
+void test_insert_before(){
+    printf("Test insert_before(): \t");
+    printf("insert before chain. \t\t\t");
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
@@ -233,10 +210,12 @@ void test6(){
         tmp = tmp->next;
     }
     assert((unsigned int) (tmp->data) == counter--);
-    printf("test6 - Passed -- basic list inserting (before) and ordering.\n");
+    printf("PASSED\n");
 }
 
-void test7(){
+void test_insert_mixed(){
+    printf("Test mixed inserts: \t");
+    printf("mixed inserts. \t\t\t\t");
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
@@ -257,12 +236,6 @@ void test7(){
     insert_before(fst, tmp);
     fst = tmp;
 
-    /*tmp = fst;
-    while(tmp->next != tmp){
-        printf("data: %d\n", (int)(tmp->data));
-        tmp = tmp->next;
-    }
-    printf("data: %d\n", (int)(tmp->data));*/
 
     tmp = fst;
     assert((unsigned int) (tmp->data) == 3);
@@ -272,17 +245,13 @@ void test7(){
     assert((unsigned int) (tmp->data) == 2);
     tmp =tmp->next;
     assert((unsigned int) (tmp->data) == 1);
-    
-    printf("test7 - Passed -- fancy list inserting (before and after) and ordering.\n");
+    printf("PASSED\n");
 }
 
 int main(){
 
-    test1(); // Test basic list inserting and ordering.
-    test2(); // Test removing elements from list (forward using next).
-    test3(); // Test removing elements from list (backward using prev).
-    test4(); // Test removing an element from the list.
-    test5(); // Test removing the last element from the list.
-    test6(); // Test basic list inserting (before) and ordering.
-    test7(); // Test fancy list inserting (before and after) and ordering.
+    test_insert_after();
+    test_insert_before();
+    test_remove_node();
+    test_insert_mixed();
 }
