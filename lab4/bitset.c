@@ -56,9 +56,7 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     unsigned int arg_offset = arg_bss->offset;
 
     do{
-        //printf("ro: %u\tao: %u\n", result_offset, arg_offset);
         if(arg_offset == result_offset){
-            //printf("arg_offset == result_offset\n");
             result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
             result_offset = result_bss->offset;
 
@@ -73,7 +71,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
             result_offset = result_bss->offset;
 
         }else{ //arg_offset < result_offset
-            //printf("arg_offset < result_offset\n");
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
             list_t* new_node = create_node(new_bss);
@@ -81,10 +78,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
             if(result_l == result->list){
                 result->list = new_node;
             }
-           // result_l = result_l->next; //result_l == new_bss node
-           // result_l = result_l->next; //result_l == next in original result_l
-            //result_bss = result_l->data;
-            //result_offset = result_bss->offset;
 
             arg_l = arg_l->next;
             arg_bss = arg_l->data;
@@ -94,7 +87,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     }while(arg_l->next != arg_l && result_l->next != result_l);
 
     if(arg_offset == result_offset){
-        //printf("arg_offset == result_offset #222\n");
         result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
         result_offset = result_bss->offset;
     }
@@ -145,9 +137,7 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
     unsigned int tmp_bits;
 
     do{
-        //printf("\na_off: %u\tr_off: %u\n", arg_offset, result_offset);
         if(arg_offset == result_offset){
-            //printf("arg_offset == result_offset\n");
             tmp_bits = and_bits(result_bss->bit, arg_bss->bit);
             tmp_bits = not_bits(tmp_bits);
             tmp_bits = and_bits(tmp_bits, result_bss->bit);
@@ -158,11 +148,8 @@ void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
 
         }else if(arg_offset > result_offset){
             result_l = result_l->next;
-            //printf("arg_offset > result_offset\n");
-
         }else { //arg_offset < result_offset
             arg_l = arg_l->next;
-            //printf("arg_offset < result_offset\n");
         }
 
         arg_bss = arg_l->data;
@@ -222,7 +209,6 @@ BitSet_struct* bitset_copy(BitSet_struct* arg){
     list_t* arg_l = arg->list;
 
     do{
-//((BitSetSubset_struct*) bs_l->data)->offset
         BitSetSubset_struct* b_sub = bitsetsubset_create(((BitSetSubset_struct*) arg_l->data)->offset);
         b_sub->bit = ((BitSetSubset_struct*) arg_l->data)->bit;
 
