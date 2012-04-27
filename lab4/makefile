@@ -9,16 +9,15 @@ NVERTEX	= 8
 MAXSUCC	= 4
 NACTIVE	= 10
 NTHREADS = 4
-PRINT_OUTPUT=false
-PRINT_INPUT=true
-PRINT_DEBUG=false
+PRINT_OUTPUT=true
+PRINT_INPUT=false
 
 all: dataflow
 
 # The variable $@ has the value of the target. In this case $@ = psort
 dataflow: dataflow.o bitset.o list.o rand.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ dataflow.o bitset.o list.o rand.o ${LIBS}
-	#./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > c_output.txt
+	#./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} > c_output.txt
 
 	#javac DataflowCorrect.java && java -Xmx1024M Dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > java_output.txt
 	#rm -f *.class
