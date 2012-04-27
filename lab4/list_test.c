@@ -169,7 +169,7 @@ void test_remove_node(){
     tmp = tmp->prev;
     assert((unsigned int) (tmp->data) == 2);
     tmp = tmp->prev;
-    assert((unsigned int) (tmp->data) == 2); // Make sure end->prev = prev.
+    assert((unsigned int) (tmp->data) == 2); // Make sure first->prev = first.
     printf("PASSED\n");
 
 }
@@ -251,10 +251,152 @@ void test_insert_mixed(){
     printf("PASSED\n");
 }
 
+
+void test_add_last(){
+    printf("Test add_last(): \t");
+    printf("add_last(), starting from a node. \t");
+
+    int nbr = 0;
+    int nbr1 = 1;
+    int nbr2 = 2;
+    int nbr3 = 3;
+    int nbr4 = 4;
+
+    list_t* fst = create_node((void*)nbr);
+    list_t* lst = fst;
+    list_t* tmp = fst;
+    tmp = lst = fst;
+
+    tmp = create_node((void*)nbr1);
+    insert_after(fst, tmp);
+    lst = tmp;
+
+    tmp = fst;
+    assert((unsigned int) (tmp->data) == 0);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1); // Make sure end->next = end.
+    printf("PASSED\n");
+
+
+    printf("\t\t\tadd_last(), starting from first. \t");
+    tmp = lst = fst = create_node((void*)nbr);
+
+    tmp = create_node((void*)nbr1);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    tmp = create_node((void*)nbr2);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    tmp = create_node((void*)nbr3);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+    tmp = create_node((void*)nbr4);
+    add_last(fst, tmp);
+    lst = tmp;
+
+    tmp = fst;
+    assert((unsigned int) (tmp->data) == 0);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 3);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4); // Make sure end->next = end.
+    printf("PASSED\n");
+
+
+    printf("\t\t\tadd_last(), starting from middle. \t");
+    tmp = lst = fst = create_node((void*)nbr);
+    list_t* tmp2 = tmp;
+
+
+    tmp = create_node((void*)nbr1);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+
+    tmp = create_node((void*)nbr2);
+    insert_after(lst, tmp);
+    tmp2 = lst = tmp;
+
+
+    tmp = create_node((void*)nbr3);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+
+    tmp = create_node((void*)nbr4);
+    add_last(tmp2, tmp);
+    lst = tmp;
+
+
+    tmp = fst;
+    assert((unsigned int) (tmp->data) == 0);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 3);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4); // Make sure end->next = end.
+    printf("PASSED\n");
+
+
+    printf("\t\t\tadd_last(), starting from last. \t");
+    tmp2 = tmp = lst = fst = create_node((void*)nbr);
+
+    tmp = create_node((void*)nbr1);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+
+    tmp = create_node((void*)nbr2);
+    insert_after(lst, tmp);
+    tmp2 = lst = tmp;
+
+
+    tmp = create_node((void*)nbr3);
+    insert_after(lst, tmp);
+    lst = tmp;
+
+
+    tmp = create_node((void*)nbr4);
+    add_last(lst, tmp);
+    lst = tmp;
+
+
+    tmp = fst;
+    assert((unsigned int) (tmp->data) == 0);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 1);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 2);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 3);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4);
+    tmp =tmp->next;
+    assert((unsigned int) (tmp->data) == 4); // Make sure end->next = end.
+    printf("PASSED\n");
+}
+
 int main(){
 
     test_insert_after();
     test_insert_before();
     test_remove_node();
     test_insert_mixed();
+    test_add_last();
 }
