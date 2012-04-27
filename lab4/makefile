@@ -29,6 +29,9 @@ bitset_test: bitset_test.o bitset.o list.o
 list_test: list_test.o list.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ list_test.o list.o ${LIBS}
 
+rand_test: rand_test.o rand.o
+	${CC} ${CFLAGS} ${INCLUDES} -o $@ rand_test.o rand.o ${LIBS}
+
 test:   bitset_test list_test
 	./bitset_test
 	./list_test
