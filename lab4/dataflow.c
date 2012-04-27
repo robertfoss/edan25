@@ -220,15 +220,20 @@ void liveness(list_t* vertex_list){
 
 int main(int ac, char** av){
 
+    printf("ac = %d\n", ac);
+    if(ac != 8){
+        printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input)\n");
+        exit(1);
+    }
+
 	int	i;
 	//int	nsym; //global
 	//int	nvertex; //global
 	int	maxsucc;
 	int	nactive;
-	//int	nthread;
+	int	nthread;
 	bool print_output;
 	//bool print_input; //global
-	//bool print_debug;
 	list_t* vertex; //Vertex vertex[];
 	Random r;
 
@@ -241,30 +246,21 @@ int main(int ac, char** av){
 	sscanf(av[2], "%d", &nvertex); //nvertex = Integer.parseInt(args[1]);
 	sscanf(av[3], "%d", &maxsucc); //maxsucc = Integer.parseInt(args[2]);
 	sscanf(av[4], "%d", &nactive); //nactive = Integer.parseInt(args[3]);
-	//sscanf(av[5], "%d", &nthread); //nthread = Integer.parseInt(args[4]);
+	sscanf(av[5], "%d", &nthread); //nthread = Integer.parseInt(args[4]);
 
-	sscanf(av[6], "%s", tmp_string);
+    tmp_string = av[6];
 	if(tolower(tmp_string[0]) == 't'){
 		print_output = true; //print_output = Boolean.valueOf(args[5]).booleanValue();
 	}else{
 		print_output = false;
 	}
 
-	sscanf(av[7], "%s", tmp_string);
+    tmp_string = av[7];
 	if(tolower(tmp_string[0]) == 't'){
 		print_input = true;	//print_input = Boolean.valueOf(args[6]).booleanValue();
 	}else{
 		print_input = false;
 	}
-
-/*
-	sscanf(av[8], "%s", tmp_string);
-	if(tolower(tmp_string[0]) == 't'){
-		print_debug = true; //print_debug = Boolean.valueOf(args[7]).booleanValue();
-	}else{
-		print_debug = false;
-	}
-*/
 
 	for (i = 0; i < nvertex; ++i){
 		vertex->next = create_node(new_vertex(i));
