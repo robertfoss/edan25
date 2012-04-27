@@ -29,10 +29,17 @@ bitset_test: bitset_test.o bitset.o list.o
 
 list_test: list_test.o list.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ list_test.o list.o ${LIBS}
+
+test:   bitset_test list_test
+	echo "Testing bitset.c using bitset_test.c" && ./bitset_test
+	echo "Testing list.c list_test.c" && ./list_test
+
 .c.o:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
 
 clean:
 	rm -f *.o dataflow bitset_test list_test *~
 
+
+.PHONY: all test
 # DO NOT DELETE
