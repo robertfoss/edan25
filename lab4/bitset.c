@@ -226,6 +226,7 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
     unsigned int bit_offset = (unsigned int)((bit_index / SUBSET_BITS)* SUBSET_BITS);
     unsigned int bit_local_index = (unsigned int) (bit_index % SUBSET_BITS);
 
+
     if(bs_l == NULL && bit_val){
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
         bss->bit = (1 << bit_local_index);
@@ -233,7 +234,6 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
         bs->list = create_node(bss);
         return false;
     } else if (bs_l == NULL){
-
         return false;
     }
 
@@ -242,16 +242,28 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
         bs_l = bs_l->next;
         bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     }
-    
+        bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
+    printf("bss_offset: %d\tbit_offset: %d\tbit_index: %d\tbit_val: %d\n",bss_offset,bit_offset,bit_index,bit_val);
+
+
     bool old_bit_val;
     if(bit_offset == bss_offset){
         BitSetSubset_struct* bss = ((BitSetSubset_struct*) bs_l->data);
         old_bit_val = (bool) bss->bit & (1 << bit_local_index);
         bss->bit = bit_val ? (bss->bit | (1 << bit_local_index)) : (bss->bit & ~(1 << bit_local_index)) ;
-    } else if (bit_val == true) {
+    } else if ( bit_offset < bss_offset && bit_val == true) {
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
-        bss->bit =  ((unsigned int) bit_val) << bit_local_index;
-        bss->offset = bit_offset;
+        bss->bit =  bit_val << bit_local_index;
+        insert_before(bs_l, create_node(bss));
+        old_bit_val = false;
+        printf("***\n");
+        BitSet_struct* bees= bitset_create();
+        bees->list = create_node(bss);
+        bitset_print(bees);
+        printf("***\n");
+    }  else if ( bit_offset > bss_offset && bit_val == true) {
+        BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
+        bss->bit =  bit_val << bit_local_index;
         insert_after(bs_l, create_node(bss));
         old_bit_val = false;
     } else {
