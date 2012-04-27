@@ -220,7 +220,7 @@ void liveness(list_t* vertex_list){
 
 int main(int ac, char** av){
 
-    printf("ac = %d\n", ac);
+    //printf("ac = %d\n", ac);
     if(ac != 8){
         printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input)\n");
         exit(1);
@@ -263,7 +263,8 @@ int main(int ac, char** av){
 	}
 
 	for (i = 0; i < nvertex; ++i){
-		vertex->next = create_node(new_vertex(i));
+        insert_after(vertex, create_node(new_vertex(i)));
+		vertex = vertex->next;
 	}
 
 	generateCFG(vertex, maxsucc, r);
