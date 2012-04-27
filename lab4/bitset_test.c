@@ -167,9 +167,9 @@ void test_bitset_equals(){
 void test_bitset_set_bit(){
     printf("Test bitset_set_bit(): \t");
     
-    int bits_true[] = {1, 3, 5, 127, 128}; // bits_true[index+1] remains unset.
+    int bits_true[] = {1, 3, 5, 7, 127, 128}; // bits_true[index+1] remains unset.
     int len_true = sizeof(bits_true)/sizeof(int);
-    int bits_false[] = {3, 127};
+    int bits_false[] = {3, 5, 127};
     int len_false = sizeof(bits_false)/sizeof(int);
 
     BitSet_struct* bs = bitset_create();
@@ -177,7 +177,7 @@ void test_bitset_set_bit(){
     printf("setting %d bits to true. \t\t", len_true);
     for(int i = 0; i < len_true; ++i){
         bitset_set_bit(bs, bits_true[i], true);
-        bitset_set_bit(bs, bits_true[i+1], false);
+        bitset_set_bit(bs, bits_true[i]+1, false);
     }
     for(int i = 0; i < len_true; ++i){
         assert(bitset_get_bit(bs, bits_true[i]) == true);
