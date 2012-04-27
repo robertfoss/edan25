@@ -66,7 +66,7 @@ void computeIn(Vertex* u, list_t* worklist){
 		tmp_list = u->pred_list->next;
 		do{
 			v = tmp_list->data;
-			if(!(v->listed)){
+			if(!(v->listed)){ //v = null?
 				add_last(worklist, create_node(v));
 				v->listed = true;
 			}
@@ -118,25 +118,33 @@ void connect(Vertex* pred, Vertex* succ){
 	add_last(succ->pred_list, create_node(pred));
 }
 
-void generateCFG(list_t* vertex_list, int maxsucc, Random r){
+void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
+    printf("in generateCFG\n");
 	int i = 2;
 	int j;
 	int k;
 	int s; // number of successors of a vertex.
+    Vertex* tmp_v;
 	list_t* tmp_list = vertex_list->next;
 
-	connect(tmp_list->data, tmp_list->next->data);
-	tmp_list = tmp_list->next;
-	connect(tmp_list->data, tmp_list->next->data);
+    tmp_v = tmp_list->next->data;
+    printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
+	connect(tmp_list->data, tmp_v); //0->1
+
+    tmp_v = tmp_list->next->next->data;
+    printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
+	connect(tmp_list->data, tmp_v); //0->2
 	tmp_list = tmp_list->next;
 
 	while(tmp_list->next != tmp_list){
 		if(print_input){
 			printf("[%d] succ = {", i);
 		}
-		s = (nextRand(r) % maxsucc) + 1;
+
+        s = nextRand(r) % maxsucc +1;
+
 		for (j = 0; j < s; ++j) {
-			k = abs(nextRand(r)) % nvertex; //vertex.length
+			k = abs(nextRand(r)) % nvertex;
 			if(print_input){
 				printf(" %d", k);
 			}
@@ -150,14 +158,16 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random r){
 	}
 }
 
-void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random r){
+void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
+    printf("in generateUseDef\n");
 	int i = 0;
 	int j;
 	int sym;
 	list_t* tmp_list = vertex_list->next;
 	Vertex* v;
 
-	while(tmp_list->next != tmp_list){
+    for(i = 0; i < nvertex; ++i){
+//	while(tmp_list->next != tmp_list){
 		v = tmp_list->data; //vertex_list[i]
 
 		if(print_input){
@@ -186,11 +196,13 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random r){
 		if(print_input){
 			printf("}\n");
 		}
-		++i;
+        tmp_list = tmp_list->next;
+		//++i;
 	}
 }
 
 void liveness(list_t* vertex_list){
+    printf("in liveness\n");
 	Vertex* u;
 	Vertex* v;
 	list_t* worklist = create_node(NULL);
@@ -203,21 +215,26 @@ void liveness(list_t* vertex_list){
 
 	while(tmp_list->next != tmp_list){
 		v = tmp_list->data;
-		add_last(worklist, create_node(v));
 		v->listed = true;
+		add_last(worklist, create_node(v));
+        tmp_list = tmp_list->next;
 	}
 
-	while(worklist->next != worklist){
-		tmp_list = worklist->next; //worklist.remove(); 
-		u = worklist->data; 
-		remove_node(worklist);
-		worklist = tmp_list;
+    //tmp_list = vertex_list->next;
 
+	while(worklist->next != worklist){ // while (!worklist.isEmpty())
+        //tmp_list = worklist->next;
+        u = remove_node(worklist->next);
+        //worklist = tmp_list;
 		u->listed = false;
+        printf("u->index = %d\n",u->index);
 		computeIn(u, worklist);
+        printf("after computeIn in liveness\n");
 	}
 
 	end = sec();
+    printf("T = %f s\n", (end - begin));
+
 }
 
 int main(int ac, char** av){
@@ -237,7 +254,8 @@ int main(int ac, char** av){
 	bool print_output;
 	//bool print_input; //global
 	list_t* vertex; //Vertex vertex[];
-	Random r;
+	Random* r = new_random();
+    list_t* tmp_list;
 
 	setSeed(r, 1);
 	vertex = create_node(NULL); //First element = NULL
@@ -264,17 +282,20 @@ int main(int ac, char** av){
 		print_input = false;
 	}
 
+    tmp_list = vertex;
 	for (i = 0; i < nvertex; ++i){
-        insert_after(vertex, create_node(new_vertex(i)));
-		vertex = vertex->next;
+        printf("Creating node %d\n", i);
+        insert_after(tmp_list, create_node(new_vertex(i)));
+		tmp_list = tmp_list->next;
 	}
 
 	generateCFG(vertex, maxsucc, r);
 	generateUseDef(vertex, nsym, nactive, r);
-	liveness(vertex);
+	liveness(vertex); //infite loop here?
 
 	if(print_output){
-		list_t* tmp_list = vertex->next;
+        tmp_list = vertex->next;
+
 		for (i = 0; i < nvertex; ++i){
 			print_vertex(tmp_list->data);
 			tmp_list = tmp_list->next;
