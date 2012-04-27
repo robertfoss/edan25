@@ -178,14 +178,14 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 			sym = abs(nextRand(r)) % nsym;
 
 			if (j % 4 != 0) {
-				if(bitset_get_bit(v->def, sym)){ //!vertex[i].def.get(sym) 
+				if(!bitset_get_bit(v->def, sym)){ //!vertex[i].def.get(sym) 
 					if(print_input){
 						printf(" u %d", sym);
 					}
 					bitset_set_bit(v->use, sym, 1); //vertex[i].use.set(sym);
 				}
 			}else{
-				if(bitset_get_bit(v->use, sym)){ //!vertex[i].use.get(sym)
+				if(!bitset_get_bit(v->use, sym)){ //!vertex[i].use.get(sym)
 					if(print_input){
 						printf(" d %d", sym);
 					}
