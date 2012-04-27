@@ -49,11 +49,13 @@ void computeIn(Vertex* u, list_t* worklist){
 	BitSet_struct* old;
 	Vertex* v;
 
-	list_t* tmp_list = u->succ_list->next;
+	list_t* tmp_list = u->succ_list;
 	do{
-		v = tmp_list->data;
-		bitset_or(u->out, v->in);
         tmp_list = tmp_list->next;
+		v = tmp_list->data;
+        if(v != NULL){
+		    bitset_or(u->out, v->in);
+        }
 	}while(tmp_list->next != tmp_list);
 
 	old = u->in;
@@ -63,14 +65,14 @@ void computeIn(Vertex* u, list_t* worklist){
 	bitset_or(u->in, u->use);
 
 	if(bitset_equals(u->in, old)){
-		tmp_list = u->pred_list->next;
+		tmp_list = u->pred_list;
 		do{
+            tmp_list = tmp_list->next;
 			v = tmp_list->data;
-			if(!(v->listed)){ //v = null?
+			if(v != NULL && !(v->listed)){ //v = null?
 				add_last(worklist, create_node(v));
 				v->listed = true;
 			}
-            tmp_list = tmp_list->next;
 		}while(tmp_list->next != tmp_list);
 	}
 }
