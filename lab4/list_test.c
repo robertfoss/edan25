@@ -14,6 +14,9 @@ void print_list(list_t* input){
 
 
 void test_insert_after(){
+    printf("Test insert_after(): \t");
+
+    printf("insert_after() chain. \t\t\t");
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
@@ -47,7 +50,7 @@ void test_insert_after(){
         tmp = tmp->next;
     }
     assert((unsigned int) (tmp->data) == counter++);
-    printf("test1 - Passed -- basic list inserting (after) and ordering.\n");
+    printf("PASSED\n");
 }
 
 void test_remove_node(){
@@ -175,7 +178,7 @@ void test_remove_node(){
 
 void test_insert_before(){
     printf("Test insert_before(): \t");
-    printf("insert before chain. \t\t\t");
+    printf("insert_before() chain. \t\t\t");
     int nbr = 0;
     list_t* fst = create_node((void*)nbr);
     list_t* lst = fst;
