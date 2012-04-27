@@ -194,6 +194,23 @@ void test_bitset_set_bit(){
     }
     printf("PASSED\n");
 
+
+
+    int bits_true2[] = {33, 37, 40, 127, 128}; // bits_true[index+1] remains unset.
+    int len_true2 = sizeof(bits_true2)/sizeof(int);
+
+    bs = bitset_create();
+    
+    printf("\t\t\tsparse beginning of bitset. \t\t", len_true);
+    for(int i = 0; i < len_true2; ++i){
+        bitset_set_bit(bs, bits_true2[i], true);
+        bitset_set_bit(bs, bits_true2[i]+1, false);
+    }
+    for(int i = 0; i < len_true2; ++i){
+        assert(bitset_get_bit(bs, bits_true2[i]) == true);
+    }  
+    printf("PASSED\n");
+
 }
 
 void test_bitset_get_bit(){
