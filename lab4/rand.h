@@ -3,5 +3,6 @@ typedef struct{
     int z;
 } Random;
 
-void setSeed(Random r, int seed);
-int nextRand(Random r);
+Random* new_random();
+void setSeed(Random* r, int seed);
+int nextRand(Random* r);
