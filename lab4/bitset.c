@@ -281,6 +281,10 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
     unsigned int bit_offset = (unsigned int)((bit_index / SUBSET_BITS)* SUBSET_BITS);
     unsigned int bit_local_index = (unsigned int) (bit_index % SUBSET_BITS);
 
+    if(bs_l == NULL){
+        return false;
+    }
+
     unsigned int bs_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     while(bs_offset < bit_offset && bs_l->next != bs_l){
         bs_l = bs_l->next;
