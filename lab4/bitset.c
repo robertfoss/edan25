@@ -217,7 +217,6 @@ BitSet_struct* bitset_copy(BitSet_struct* arg){
     }else{
         add_last(new_bss->list, create_node(b_sub));
     }
-f
     return new_bss;
 }
 
