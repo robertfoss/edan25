@@ -210,7 +210,6 @@ class Dataflow {
 		int	nthread;
 		boolean	print_output;
 		boolean print_input;
-		boolean print_debug;
 		Vertex	vertex[];
 		Random	r;
 
@@ -223,7 +222,6 @@ class Dataflow {
 		nthread = Integer.parseInt(args[4]);
 		print_output = Boolean.valueOf(args[5]).booleanValue();
 		print_input = Boolean.valueOf(args[6]).booleanValue();
-		print_debug = Boolean.valueOf(args[7]).booleanValue();
 	
 		/*System.out.println("nsym = " + nsym);
 		System.out.println("nvertex = " + nvertex);
