@@ -104,19 +104,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     }while(arg_l->next != arg_l);
 }
 
-static
-BitSetSubset_struct* find_bss(BitSet_struct* bs, unsigned int offset){
-	list_t* bs_l = bs->list;
-    short done = 1;
-    while(done > 0){
-        if (bs_l->next == bs_l)
-            --done;
-        if ( ((BitSetSubset_struct*) bs_l->data)->offset == offset)
-            return (BitSetSubset_struct*) bs_l->data;
-        bs_l = bs_l->next;
-    }
-    return NULL;
-}
 
 void bitset_and_not(BitSet_struct* result, BitSet_struct* arg){
 	list_t* result_l = result->list;
@@ -230,7 +217,7 @@ BitSet_struct* bitset_copy(BitSet_struct* arg){
     }else{
         add_last(new_bss->list, create_node(b_sub));
     }
-
+f
     return new_bss;
 }
 
@@ -301,28 +288,6 @@ bool bitset_get_bit(BitSet_struct* bs, unsigned int bit_index){
     return old_bit_val;
 }
 
-static 
-void bitset_print_helper(list_t* bs_l, unsigned int* last_print_offset, unsigned int* bs_print_offset){
-
-    while(*last_print_offset < *bs_print_offset){
-        printf("%4u -%4u\t|", *last_print_offset, (unsigned int) (*last_print_offset + SUBSET_BITS - 1));
-        for(int j = 0; j < SUBSET_BITS; ++j)
-            printf("0");
-        printf("|\n");
-        *last_print_offset += SUBSET_BITS;
-    }
-
-    printf("%4u -%4u\t|", *bs_print_offset, (unsigned int) (*bs_print_offset + SUBSET_BITS - 1));
-    for(int i = 0; i < SUBSET_BITS; ++i){
-        if(((BitSetSubset_struct*) bs_l->data)->bit & (1 << i)){
-            printf("1");
-        } else {
-            printf("0");
-        }
-    }
-    printf("|\n");
-    *last_print_offset += SUBSET_BITS;
-}
 
 void bitset_print(BitSet_struct* bs){
     list_t* bs_l = bs->list;
