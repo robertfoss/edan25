@@ -254,7 +254,7 @@ void test_insert_mixed(){
 
 void test_add_last(){
     printf("Test add_last(): \t");
-    printf("add_last(), starting from a node. \t");
+    printf("starting from a node. \t\t\t");
 
     int nbr = 0;
     int nbr1 = 1;
@@ -280,7 +280,7 @@ void test_add_last(){
     printf("PASSED\n");
 
 
-    printf("\t\t\tadd_last(), starting from first. \t");
+    printf("\t\t\tstarting from first. \t\t\t");
     tmp = lst = fst = create_node((void*)nbr);
 
     tmp = create_node((void*)nbr1);
@@ -314,7 +314,7 @@ void test_add_last(){
     printf("PASSED\n");
 
 
-    printf("\t\t\tadd_last(), starting from middle. \t");
+    printf("\t\t\tstarting from middle. \t\t\t");
     tmp = lst = fst = create_node((void*)nbr);
     list_t* tmp2 = tmp;
 
@@ -354,7 +354,7 @@ void test_add_last(){
     printf("PASSED\n");
 
 
-    printf("\t\t\tadd_last(), starting from last. \t");
+    printf("\t\t\tstarting from last. \t\t\t");
     tmp2 = tmp = lst = fst = create_node((void*)nbr);
 
     tmp = create_node((void*)nbr1);
