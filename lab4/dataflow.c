@@ -173,9 +173,8 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 		v = tmp_list->data; //vertex_list[i]
 
 		if(print_input){
-			//printf("[%d] usedef = {", i);
+			printf("[%d] usedef = {", i);
 		}
-        printf("\n");
 		for (j = 0; j < nactive; ++j) {
 			sym = abs(nextRand(r)) % nsym;
 
@@ -183,25 +182,21 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 			if (j % 4 != 0) {
 				if(!bitset_get_bit(v->def, sym)){ //!vertex[i].def.get(sym) 
 					if(print_input){
-						//printf(" u %d", sym);
+						printf(" u %d", sym);
 					}
-					//bitset_set_bit(v->use, sym, 1); //vertex[i].use.set(sym);
+					bitset_set_bit(v->use, sym, 1); //vertex[i].use.set(sym);
 				}
 			}else{
 				if(!bitset_get_bit(v->use, sym)){ //!vertex[i].use.get(sym)
 					if(print_input){
-						//printf(" d %d", sym);
+						printf(" d %d", sym);
 					}
-                    printf("\n");
-                    printf("%d-%d: %d\n",i,j,sym);
 					bitset_set_bit(v->def, sym, 1); //vertex[i].def.set(sym);
-                    bitset_print(v->def);
-
 				}
 			}
 		}
 		if(print_input){
-			//printf("}\n");
+			printf("}\n");
 		}
         tmp_list = tmp_list->next;
 		//++i;

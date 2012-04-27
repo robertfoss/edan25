@@ -242,9 +242,6 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
         bs_l = bs_l->next;
         bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
     }
-        bss_offset = ((BitSetSubset_struct*) bs_l->data)->offset;
-    printf("bss_offset: %d\tbit_offset: %d\tbit_index: %d\tbit_val: %d\n",bss_offset,bit_offset,bit_index,bit_val);
-
 
     bool old_bit_val;
     if(bit_offset == bss_offset){
@@ -253,14 +250,15 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
         bss->bit = bit_val ? (bss->bit | (1 << bit_local_index)) : (bss->bit & ~(1 << bit_local_index)) ;
     } else if ( bit_offset < bss_offset && bit_val == true) {
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
+        list_t* tmp_node = create_node(bss);
         bss->bit =  bit_val << bit_local_index;
-        insert_before(bs_l, create_node(bss));
+        insert_before(bs_l, tmp_node);
+
+        if(bs->list = bs_l) //If bs_l is the first node of the bitset
+            bs->list = tmp_node;
+
         old_bit_val = false;
-        printf("***\n");
-        BitSet_struct* bees= bitset_create();
-        bees->list = create_node(bss);
-        bitset_print(bees);
-        printf("***\n");
+
     }  else if ( bit_offset > bss_offset && bit_val == true) {
         BitSetSubset_struct* bss = bitsetsubset_create(bit_offset);
         bss->bit =  bit_val << bit_local_index;
