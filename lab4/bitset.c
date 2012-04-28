@@ -49,7 +49,7 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
         *result = *bitset_copy(arg);
         return;
     }
-
+    
     BitSetSubset_struct* result_bss = result_l->data;
     BitSetSubset_struct* arg_bss = arg_l->data;
     unsigned int result_offset = result_bss->offset;
@@ -57,32 +57,33 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     do{
         if(arg_offset == result_offset){
             result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
-            result_offset = result_bss->offset;
             result_l = result_l->next;
             arg_l = arg_l->next;
-
+        
         }else if(arg_offset > result_offset){
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
             insert_after(result_l, create_node(new_bss));
             result_l = result_l->next; //result_l == new_bss node
             result_l = result_l->next; //result_l == next in original result_l
-            result_bss = result_l->data;
-            result_offset = result_bss->offset;
+
 
         }else{ //arg_offset < result_offset
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
             list_t* new_node = create_node(new_bss);
             insert_before(result_l, new_node);
+
             if(result_l == result->list){
                 result->list = new_node;
             }
 
             arg_l = arg_l->next;
+        }
+            result_bss = result_l->data;
+            result_offset = result_bss->offset;
             arg_bss = arg_l->data;
             arg_offset = arg_bss->offset;
-        }
 
     }while(arg_l->next != arg_l && result_l->next != result_l);
 
