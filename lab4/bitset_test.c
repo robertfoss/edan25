@@ -26,6 +26,7 @@ void test_bitset_or(){
     assert(bitset_get_bit(bs1,62) == false);
     printf("PASSED\n");
 
+
     printf("\t\t\tbitsets of differing length. \t\t");
     bs1 = bitset_create();
     bitset_set_bit(bs1, 1, true);
@@ -50,6 +51,58 @@ void test_bitset_or(){
     assert(bitset_get_bit(bs1,61) == true);
     assert(bitset_get_bit(bs1,62) == false);
     printf("PASSED\n");
+
+
+    printf("\t\t\tlonger result-arg than arg-arg. \t");
+    bs1 = bitset_create();
+    bitset_set_bit(bs1, 1, true);
+    bitset_set_bit(bs1, 5, true);
+    bitset_set_bit(bs1, 20, true);
+    bitset_set_bit(bs1, 32, true);
+    bitset_set_bit(bs1, 64, true);
+
+    bs2 = bitset_create();
+    bitset_set_bit(bs2, 1, true);
+    bitset_set_bit(bs2, 3, true);
+    bitset_set_bit(bs2, 33, true);
+
+    bitset_or(bs1, bs2);
+
+    assert(bitset_get_bit(bs1,1) == true);
+    assert(bitset_get_bit(bs1,3) == true);
+    assert(bitset_get_bit(bs1,5) == true);
+    assert(bitset_get_bit(bs1,20) == true);
+    assert(bitset_get_bit(bs1,32) == true);
+    assert(bitset_get_bit(bs1,33) == true);
+    assert(bitset_get_bit(bs1,64) == true);
+    printf("PASSED\n");
+
+
+    printf("\t\t\tshorter result-arg than arg-arg. \t");
+    bs1 = bitset_create();
+    bitset_set_bit(bs1, 1, true);
+    bitset_set_bit(bs1, 3, true);
+    bitset_set_bit(bs1, 33, true);
+
+    bs2 = bitset_create();
+    bitset_set_bit(bs2, 1, true);
+    bitset_set_bit(bs2, 5, true);
+    bitset_set_bit(bs2, 20, true);
+    bitset_set_bit(bs2, 32, true);
+    bitset_set_bit(bs2, 64, true);
+
+    bitset_or(bs1, bs2);
+
+    assert(bitset_get_bit(bs1,1) == true);
+    assert(bitset_get_bit(bs1,3) == true);
+    assert(bitset_get_bit(bs1,5) == true);
+    assert(bitset_get_bit(bs1,20) == true);
+    assert(bitset_get_bit(bs1,32) == true);
+    assert(bitset_get_bit(bs1,33) == true);
+    assert(bitset_get_bit(bs1,64) == true);
+    printf("PASSED\n");
+
+
 
     printf("\t\t\tsparse bitset with regular bitset. \t");
     bs1 = bitset_create();
