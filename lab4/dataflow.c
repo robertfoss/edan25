@@ -96,7 +96,7 @@ void print_vertex(Vertex* v){
 			printf("%d ", i);
 		}
 	}
-	printf("}\n");
+	printf("}\n\n");
 	printf("in[%d] = { ", v->index);
 
 	for (i = 0; i < nsym; ++i){ //i < in.size()
@@ -112,7 +112,7 @@ void print_vertex(Vertex* v){
 			printf("%d ", i);
 		}
 	}
-	printf("}\n");
+	printf("}\n\n");
 }
 
 void connect(Vertex* pred, Vertex* succ){
@@ -121,7 +121,7 @@ void connect(Vertex* pred, Vertex* succ){
 }
 
 void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
-    printf("in generateCFG\n");
+    //printf("in generateCFG\n");
 	int i = 2;
 	int j;
 	int k;
@@ -130,11 +130,11 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 	list_t* tmp_list = vertex_list->next;
 
     tmp_v = tmp_list->next->data;
-    printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
+    //printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
 	connect(tmp_list->data, tmp_v); //0->1
 
     tmp_v = tmp_list->next->next->data;
-    printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
+    //printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
 	connect(tmp_list->data, tmp_v); //0->2
 	tmp_list = tmp_list->next;
 
@@ -161,7 +161,7 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 }
 
 void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
-    printf("in generateUseDef\n");
+    //printf("in generateUseDef\n");
 	int i = 0;
 	int j;
 	int sym;
@@ -204,7 +204,7 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 }
 
 void liveness(list_t* vertex_list){
-    printf("in liveness\n");
+    //printf("in liveness\n");
 	Vertex* u;
 	Vertex* v;
 	list_t* worklist = create_node(NULL);
@@ -229,13 +229,13 @@ void liveness(list_t* vertex_list){
         u = remove_node(worklist->next);
         //worklist = tmp_list;
 		u->listed = false;
-        printf("u->index = %d\n",u->index);
+        //printf("u->index = %d\n",u->index);
 		computeIn(u, worklist);
-        printf("after computeIn in liveness\n");
+        //printf("after computeIn in liveness\n");
 	}
 
 	end = sec();
-    printf("T = %f s\n", (end - begin));
+    //printf("T = %f s\n", (end - begin));
 
 }
 
@@ -253,7 +253,7 @@ int main(int ac, char** av){
 	int	maxsucc;
 	int	nactive;
 	int	nthread;
-	bool print_output;
+	bool print_output; 
 	//bool print_input; //global
 	list_t* vertex; //Vertex vertex[];
 	Random* r = new_random();
@@ -286,7 +286,7 @@ int main(int ac, char** av){
 
     tmp_list = vertex;
 	for (i = 0; i < nvertex; ++i){
-        printf("Creating node %d\n", i);
+        //printf("Creating node %d\n", i);
         insert_after(tmp_list, create_node(new_vertex(i)));
 		tmp_list = tmp_list->next;
 	}
