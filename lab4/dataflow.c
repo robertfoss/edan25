@@ -54,13 +54,13 @@ void computeIn(Vertex* u, list_t* worklist){
         }
 	}while(tmp_list->next != tmp_list);
 
-	old = u->in;
+	old = bitset_copy(u->in);
 	u->in = bitset_create();
 	bitset_or(u->in, u->out);
 	bitset_and_not(u->in, u->def);
 	bitset_or(u->in, u->use);
 
-	if(bitset_equals(u->in, old)){
+	if(!bitset_equals(u->in, old)){
 		tmp_list = u->pred_list;
 		do{
             tmp_list = tmp_list->next;
@@ -110,18 +110,21 @@ void print_vertex(Vertex* v){
 }
 
 void connect(Vertex* pred, Vertex* succ){
+    printf("%d -> %d\n",pred->index, succ->index);
 	add_last(pred->succ_list, create_node(succ));
 	add_last(succ->pred_list, create_node(pred));
 }
 
 void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
-    //printf("in generateCFG\n");
+    printf("in generateCFG\n");
 	int i = 2;
 	int j;
 	int k;
 	int s;
     Vertex* tmp_v;
+    Vertex* tmp_s;
 	list_t* tmp_list = vertex_list->next;
+    list_t* tmp_list_s;
 
     tmp_v = tmp_list->next->data;
 	connect(tmp_list->data, tmp_v);
@@ -131,29 +134,37 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 	tmp_list = tmp_list->next;
 
 	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        tmp_v = tmp_list->data; //vertex[i]
 		if(print_input){
 			printf("[%d] succ = {", i);
 		}
 
         s = nextRand(r) % maxsucc +1;
-
 		for (j = 0; j < s; ++j) {
 			k = abs(nextRand(r)) % nvertex;
 			if(print_input){
 				printf(" %d", k);
 			}
-			connect(tmp_list->data, tmp_list->next->data);
+            tmp_list_s = vertex_list->next;
+            tmp_s = tmp_list_s->data;
+            while(tmp_s->index != k){
+                tmp_list_s = tmp_list_s->next;
+                tmp_s = tmp_list_s->data;
+            }
+
+            printf("i = %d, k = %d\ttmp_v->index = %d, tmp_s->index = %d\t", i, k, tmp_v->index, tmp_s->index);
+			connect(tmp_v, tmp_s);
 		}
 		if(print_input){
 			printf("}\n");
 		}
-		tmp_list = tmp_list->next;
 		++i;
 	}
 }
 
 void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
-    //printf("in generateUseDef\n");
+    printf("in generateUseDef\n");
 	int j;
 	int sym;
 	list_t* tmp_list = vertex_list;
@@ -193,7 +204,7 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 }
 
 void liveness(list_t* vertex_list){
-    //printf("in liveness\n");
+    printf("in liveness\n");
 	Vertex* u;
 	Vertex* v;
 	list_t* worklist = create_node(NULL);
