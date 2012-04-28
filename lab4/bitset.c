@@ -46,7 +46,7 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
         return;
 
     if(result_l == NULL){
-        result = bitset_copy(arg);
+        *result = *bitset_copy(arg);
         return;
     }
 

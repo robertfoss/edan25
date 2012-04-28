@@ -7,13 +7,32 @@
 void test_bitset_or(){
     printf("Test bitset_or(): \t");
 
-    printf("2 bitsets of differing length. \t\t");
+    printf("empty bitset with non-empty bitset. \t");
     BitSet_struct* bs1 = bitset_create();
+
+    BitSet_struct* bs2 = bitset_create();
+    bitset_set_bit(bs2, 1, true);
+    bitset_set_bit(bs2, 3, true);
+    bitset_set_bit(bs2, 61, true);
+
+    bitset_or(bs1, bs2);
+
+    assert(bitset_get_bit(bs1,0) == false);
+    assert(bitset_get_bit(bs1,1) == true);
+    assert(bitset_get_bit(bs1,2) == false);
+    assert(bitset_get_bit(bs1,3) == true);
+    assert(bitset_get_bit(bs1,4) == false);
+    assert(bitset_get_bit(bs1,61) == true);
+    assert(bitset_get_bit(bs1,62) == false);
+    printf("PASSED\n");
+
+    printf("\t\t\tbitsets of differing length. \t\t");
+    bs1 = bitset_create();
     bitset_set_bit(bs1, 1, true);
     bitset_set_bit(bs1, 5, true);
     bitset_set_bit(bs1, 20, true);
 
-    BitSet_struct* bs2 = bitset_create();
+    bs2 = bitset_create();
     bitset_set_bit(bs2, 1, true);
     bitset_set_bit(bs2, 3, true);
     bitset_set_bit(bs2, 61, true);
