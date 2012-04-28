@@ -201,7 +201,7 @@ void test_bitset_set_bit(){
 
     bs = bitset_create();
     
-    printf("\t\t\tsparse beginning of bitset. \t\t", len_true);
+    printf("\t\t\tsparse beginning of bitset. \t\t");
     for(int i = 0; i < len_true2; ++i){
         bitset_set_bit(bs, bits_true2[i], true);
         bitset_set_bit(bs, bits_true2[i]+1, false);
