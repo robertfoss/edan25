@@ -54,14 +54,14 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
     BitSetSubset_struct* arg_bss = arg_l->data;
     unsigned int result_offset = result_bss->offset;
     unsigned int arg_offset = arg_bss->offset;
-
     do{
         if(arg_offset == result_offset){
             result_bss->bit = or_bits(result_bss->bit, arg_bss->bit);
             result_offset = result_bss->offset;
+            result_l = result_l->next;
+            arg_l = arg_l->next;
 
         }else if(arg_offset > result_offset){
-            printf("arg_offset > result_offset\n");
             BitSetSubset_struct* new_bss = bitsetsubset_create(arg_offset);
             new_bss->bit = arg_bss->bit;
             insert_after(result_l, create_node(new_bss));
