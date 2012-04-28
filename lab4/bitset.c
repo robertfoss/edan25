@@ -84,12 +84,6 @@ void bitset_or(BitSet_struct* result, BitSet_struct* arg){
         arg_offset = arg_bss->offset;
 
         if(result_l->next == result_l && arg_l->next == arg_l){
-            result_l = result_l->next;
-            arg_l = arg_l->next;
-            result_bss = result_l->data;
-            arg_bss = arg_l->data;
-            result_offset = result_bss->offset;
-            arg_offset = arg_bss->offset;
             break;
         }
     }
