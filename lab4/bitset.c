@@ -254,7 +254,7 @@ bool bitset_set_bit(BitSet_struct* bs, unsigned int bit_index, bool bit_val){
         bss->bit =  bit_val << bit_local_index;
         insert_before(bs_l, tmp_node);
 
-        if(bs->list = bs_l) //If bs_l is the first node of the bitset
+        if(bs->list == bs_l) //If bs_l is the first node of the bitset
             bs->list = tmp_node;
 
         old_bit_val = false;
