@@ -1,13 +1,9 @@
 //#include <pthread.h>
 #include "bitset.h"
 #include "rand.h"
-//#include "list.h"
 #include <math.h>
 #include <sys/times.h>
 #include <sys/time.h>
-//#include <stdbool.h>
-//#include <stdlib.h>
-//#include <stdio.h>
 #include <ctype.h>
 
 bool print_input;
@@ -69,7 +65,7 @@ void computeIn(Vertex* u, list_t* worklist){
 		do{
             tmp_list = tmp_list->next;
 			v = tmp_list->data;
-			if(v != NULL && !(v->listed)){ //v = null?
+			if(v != NULL && !(v->listed)){
 				add_last(worklist, create_node(v));
 				v->listed = true;
 			}
@@ -78,37 +74,35 @@ void computeIn(Vertex* u, list_t* worklist){
 }
 
 void print_vertex(Vertex* v){
-//use, def max nsym
-
 	int i;
 
 	printf("use[%d] = { ", v->index);
-	for (i = 0; i < nsym; ++i){ //i < use.size()
-		if (bitset_get_bit(v->use, i)){ //use.get(i)
+	for (i = 0; i < nsym; ++i){
+		if (bitset_get_bit(v->use, i)){
 			printf("%d ", i);
 		}
 	}
 	printf("}\n");
 	printf("def[%d] = { ", v->index);
 
-	for (i = 0; i < nsym; ++i){ //i < def.size()
-		if (bitset_get_bit(v->def, i)){ //def.get(i)
+	for (i = 0; i < nsym; ++i){
+		if (bitset_get_bit(v->def, i)){
 			printf("%d ", i);
 		}
 	}
 	printf("}\n\n");
 	printf("in[%d] = { ", v->index);
 
-	for (i = 0; i < nsym; ++i){ //i < in.size()
-		if (bitset_get_bit(v->in, i)){ //in.get(i)
+	for (i = 0; i < nsym; ++i){
+		if (bitset_get_bit(v->in, i)){
 			printf("%d ", i);
 		}
 	}
 	printf("}\n");
 	printf("out[%d] = { ", v->index);
 
-	for (i = 0; i < nsym; ++i){ //i < out.size()
-		if (bitset_get_bit(v->out, i)){ //out.get(i)
+	for (i = 0; i < nsym; ++i){
+		if (bitset_get_bit(v->out, i)){
 			printf("%d ", i);
 		}
 	}
@@ -125,17 +119,15 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 	int i = 2;
 	int j;
 	int k;
-	int s; // number of successors of a vertex.
+	int s;
     Vertex* tmp_v;
 	list_t* tmp_list = vertex_list->next;
 
     tmp_v = tmp_list->next->data;
-    //printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
-	connect(tmp_list->data, tmp_v); //0->1
+	connect(tmp_list->data, tmp_v);
 
     tmp_v = tmp_list->next->next->data;
-    //printf("%d -> %d\n", ((Vertex*)tmp_list->data)->index, tmp_v->index);
-	connect(tmp_list->data, tmp_v); //0->2
+	connect(tmp_list->data, tmp_v);
 	tmp_list = tmp_list->next;
 
 	while(tmp_list->next != tmp_list){
@@ -162,45 +154,42 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 
 void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
     //printf("in generateUseDef\n");
-	int i = 0;
 	int j;
 	int sym;
-	list_t* tmp_list = vertex_list->next;
+	list_t* tmp_list = vertex_list;
 	Vertex* v;
 
-    for(i = 0; i < nvertex; ++i){
-//	while(tmp_list->next != tmp_list){
-		v = tmp_list->data; //vertex_list[i]
+	do{
+        tmp_list = tmp_list->next;
+		v = tmp_list->data;
 
 		if(print_input){
-			printf("[%d] usedef = {", i);
+			printf("[%d] usedef = {", v->index);
 		}
 		for (j = 0; j < nactive; ++j) {
 			sym = abs(nextRand(r)) % nsym;
 
 
 			if (j % 4 != 0) {
-				if(!bitset_get_bit(v->def, sym)){ //!vertex[i].def.get(sym) 
+				if(!bitset_get_bit(v->def, sym)){
 					if(print_input){
 						printf(" u %d", sym);
 					}
-					bitset_set_bit(v->use, sym, 1); //vertex[i].use.set(sym);
+					bitset_set_bit(v->use, sym, true);
 				}
 			}else{
-				if(!bitset_get_bit(v->use, sym)){ //!vertex[i].use.get(sym)
+				if(!bitset_get_bit(v->use, sym)){
 					if(print_input){
 						printf(" d %d", sym);
 					}
-					bitset_set_bit(v->def, sym, 1); //vertex[i].def.set(sym);
+					bitset_set_bit(v->def, sym, true);
 				}
 			}
 		}
 		if(print_input){
 			printf("}\n");
 		}
-        tmp_list = tmp_list->next;
-		//++i;
-	}
+	}while(tmp_list->next != tmp_list);
 }
 
 void liveness(list_t* vertex_list){
@@ -222,16 +211,11 @@ void liveness(list_t* vertex_list){
         tmp_list = tmp_list->next;
 	}
 
-    //tmp_list = vertex_list->next;
 
 	while(worklist->next != worklist){ // while (!worklist.isEmpty())
-        //tmp_list = worklist->next;
         u = remove_node(worklist->next);
-        //worklist = tmp_list;
 		u->listed = false;
-        //printf("u->index = %d\n",u->index);
 		computeIn(u, worklist);
-        //printf("after computeIn in liveness\n");
 	}
 
 	end = sec();
@@ -241,21 +225,17 @@ void liveness(list_t* vertex_list){
 
 int main(int ac, char** av){
 
-    //printf("ac = %d\n", ac);
     if(ac != 8){
         printf("Wrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input)\n");
         exit(1);
     }
 
 	int	i;
-	//int	nsym; //global
-	//int	nvertex; //global
 	int	maxsucc;
 	int	nactive;
 	int	nthread;
 	bool print_output; 
-	//bool print_input; //global
-	list_t* vertex; //Vertex vertex[];
+	list_t* vertex;
 	Random* r = new_random();
     list_t* tmp_list;
 
@@ -264,36 +244,35 @@ int main(int ac, char** av){
 
 	char* tmp_string = "";
 
-	sscanf(av[1], "%d", &nsym); //nsym = Integer.parseInt(args[0]);
-	sscanf(av[2], "%d", &nvertex); //nvertex = Integer.parseInt(args[1]);
-	sscanf(av[3], "%d", &maxsucc); //maxsucc = Integer.parseInt(args[2]);
-	sscanf(av[4], "%d", &nactive); //nactive = Integer.parseInt(args[3]);
-	sscanf(av[5], "%d", &nthread); //nthread = Integer.parseInt(args[4]);
+	sscanf(av[1], "%d", &nsym);
+	sscanf(av[2], "%d", &nvertex);
+	sscanf(av[3], "%d", &maxsucc);
+	sscanf(av[4], "%d", &nactive);
+	sscanf(av[5], "%d", &nthread);
 
     tmp_string = av[6];
 	if(tolower(tmp_string[0]) == 't'){
-		print_output = true; //print_output = Boolean.valueOf(args[5]).booleanValue();
+		print_output = true;
 	}else{
 		print_output = false;
 	}
 
     tmp_string = av[7];
 	if(tolower(tmp_string[0]) == 't'){
-		print_input = true;	//print_input = Boolean.valueOf(args[6]).booleanValue();
+		print_input = true;
 	}else{
 		print_input = false;
 	}
 
     tmp_list = vertex;
 	for (i = 0; i < nvertex; ++i){
-        //printf("Creating node %d\n", i);
         insert_after(tmp_list, create_node(new_vertex(i)));
 		tmp_list = tmp_list->next;
 	}
 
 	generateCFG(vertex, maxsucc, r);
 	generateUseDef(vertex, nsym, nactive, r);
-	liveness(vertex); //infite loop here?
+	liveness(vertex);
 
 	if(print_output){
         tmp_list = vertex->next;
