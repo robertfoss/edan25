@@ -1,4 +1,4 @@
-//#include <pthread.h>
+#include <pthread.h>
 #include "bitset.h"
 #include "rand.h"
 #include <math.h>
@@ -25,7 +25,8 @@ typedef struct{
 	BitSet_struct* out;
 	BitSet_struct* use;
 	BitSet_struct* def;
-	//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t mutex;
+    pthread_cond_t;
 } Vertex;
 
 Vertex* new_vertex(int i){
@@ -38,12 +39,20 @@ Vertex* new_vertex(int i){
 	v->out = bitset_create();
 	v->use = bitset_create();
 	v->def = bitset_create();
+    pthread_mutex_init(&v->mutex, NULL);
+    pthread_cond_init(&->cond, NULL);
 	return v;
 }
 
 void computeIn(Vertex* u, list_t* worklist){
+    pthread_mutex_lock(&u->mutex);
 	BitSet_struct* old;
 	Vertex* v;
+
+
+    while (pthread_mutex_trylock(u->mutex) != 0) {
+        pthread_cond_wait(u->cond, u->mutex);
+    }
 
 	list_t* tmp_list = u->succ_list;
 	do{
@@ -53,6 +62,7 @@ void computeIn(Vertex* u, list_t* worklist){
 		    bitset_or(u->out, v->in);
         }
 	}while(tmp_list->next != tmp_list);
+
 	old = bitset_copy(u->in);
 	u->in = bitset_create();
 	bitset_or(u->in, u->out);
@@ -64,12 +74,17 @@ void computeIn(Vertex* u, list_t* worklist){
 		do{
             tmp_list = tmp_list->next;
 			v = tmp_list->data;
-			if(v != NULL && !(v->listed)){
-				add_last(worklist, create_node(v));
-				v->listed = true;
+			if(v != NULL){
+                if(!v->listed){
+                    printf("worklist: work added\n");
+				    add_last(worklist, create_node(v));
+				    v->listed = true;
+                }
 			}
 		}while(tmp_list->next != tmp_list);
 	}
+
+    pthread_mutex_unlock(&u->mutex);
 }
 
 void print_vertex(Vertex* v){
@@ -200,30 +215,71 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 	}while(tmp_list->next != tmp_list);
 }
 
-void liveness(list_t* vertex_list){
-    //printf("in liveness\n");
+typedef struct thread_struct {
+    unsigned int index;
+    list_t* worklist;
+} thread_struct;
+
+void* thread_func(void* ts){
+    list_t* worklist = ((thread_struct*) ts)->worklist;
+    unsigned int index = ((thread_struct*) ts)->index;
 	Vertex* u;
+    unsigned int work_counter = 0;
+	while(worklist->next != worklist){ // while (!worklist.isEmpty())
+        u = remove_node(worklist->next);
+        //printf("u->index = %d\n", u->index);
+		u->listed = false;
+		computeIn(u, worklist);
+        work_counter++;
+        printf("Thread[%u] worked %u iterations.\n", index, work_counter);
+	}
+    return NULL;
+}
+
+void liveness(list_t* vertex_list, int nthread){
+    //printf("in liveness\n");
 	Vertex* v;
-	list_t* worklist = create_node(NULL);
+
+    int status[nthread];
+ 	pthread_t thread[nthread];
+	list_t* worklist[nthread];
+    int worksplit[nthread];
+
 	double begin;
 	double end;
 
 	begin = sec();
 
+    for(int i = 0; i < nthread; ++i){
+        worksplit[i] = 0;
+        worklist[i] = create_node(NULL);
+    }
+
+
 	list_t* tmp_list = vertex_list;//->next;
+    int counter = 0;
 	while(tmp_list->next != tmp_list){
         tmp_list = tmp_list->next;
 		v = tmp_list->data;
 		v->listed = true;
-		add_last(worklist, create_node(v));
+        int index = (counter++) % nthread;
+        worksplit[index]++;
+		add_last(worklist[index], create_node(v));
 	}
+/*    for(int i = 0; i < nthread; ++i){
+        printf("worksplit[%d] = %d\n", i, worksplit[i]);
+    }
+*/
+    for(int i = 0; i < nthread; ++i){
+        thread_struct ts;
+        ts.index = i;
+        ts.worklist = worklist[i];
+        status[i] = pthread_create(&thread[i], NULL, thread_func, &ts);
+    }
 
-	while(worklist->next != worklist){ // while (!worklist.isEmpty())
-        u = remove_node(worklist->next);
-        //biprintf("u->index = %d\n", u->index);
-		u->listed = false;
-		computeIn(u, worklist);
-	}
+    for(int i = 0; i < nthread; ++i){
+        pthread_join(thread[i], NULL);
+    }
 	end = sec();
     printf("c runtime = %f s\n", (end - begin));
 
@@ -278,7 +334,7 @@ int main(int ac, char** av){
 
 	generateCFG(vertex, maxsucc, r);
 	generateUseDef(vertex, nsym, nactive, r);
-	liveness(vertex);
+	liveness(vertex, nthread);
 
 	if(print_output){
         tmp_list = vertex->next;
