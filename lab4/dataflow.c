@@ -225,7 +225,7 @@ void liveness(list_t* vertex_list){
 		computeIn(u, worklist);
 	}
 	end = sec();
-    //printf("T = %f s\n", (end - begin));
+    printf("c runtime = %f s\n", (end - begin));
 
 }
 

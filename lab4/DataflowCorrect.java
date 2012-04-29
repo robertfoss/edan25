@@ -197,7 +197,7 @@ class Dataflow {
 		}
 		end = System.nanoTime();
 
-		//System.out.println("T = " + (end-begin)/1e9 + " s");
+        System.out.printf("java runtime = %.6f s\n", (float)((end-begin)/1e9));
 	}
 
 	public static void main(String[] args)
