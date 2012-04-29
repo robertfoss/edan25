@@ -53,7 +53,6 @@ void computeIn(Vertex* u, list_t* worklist){
 		    bitset_or(u->out, v->in);
         }
 	}while(tmp_list->next != tmp_list);
-
 	old = bitset_copy(u->in);
 	u->in = bitset_create();
 	bitset_or(u->in, u->out);
@@ -110,13 +109,12 @@ void print_vertex(Vertex* v){
 }
 
 void connect(Vertex* pred, Vertex* succ){
-    printf("%d -> %d\n",pred->index, succ->index);
 	add_last(pred->succ_list, create_node(succ));
 	add_last(succ->pred_list, create_node(pred));
 }
 
 void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
-    printf("in generateCFG\n");
+    //printf("in generateCFG\n");
 	int i = 2;
 	int j;
 	int k;
@@ -153,7 +151,6 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
                 tmp_s = tmp_list_s->data;
             }
 
-            printf("i = %d, k = %d\ttmp_v->index = %d, tmp_s->index = %d\t", i, k, tmp_v->index, tmp_s->index);
 			connect(tmp_v, tmp_s);
 		}
 		if(print_input){
@@ -164,7 +161,7 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 }
 
 void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
-    printf("in generateUseDef\n");
+    //printf("in generateUseDef\n");
 	int j;
 	int sym;
 	list_t* tmp_list = vertex_list;
@@ -204,7 +201,7 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 }
 
 void liveness(list_t* vertex_list){
-    printf("in liveness\n");
+    //printf("in liveness\n");
 	Vertex* u;
 	Vertex* v;
 	list_t* worklist = create_node(NULL);
@@ -213,22 +210,20 @@ void liveness(list_t* vertex_list){
 
 	begin = sec();
 
-	list_t* tmp_list = vertex_list->next;
-
+	list_t* tmp_list = vertex_list;//->next;
 	while(tmp_list->next != tmp_list){
+        tmp_list = tmp_list->next;
 		v = tmp_list->data;
 		v->listed = true;
 		add_last(worklist, create_node(v));
-        tmp_list = tmp_list->next;
 	}
-
 
 	while(worklist->next != worklist){ // while (!worklist.isEmpty())
         u = remove_node(worklist->next);
+        //biprintf("u->index = %d\n", u->index);
 		u->listed = false;
 		computeIn(u, worklist);
 	}
-
 	end = sec();
     //printf("T = %f s\n", (end - begin));
 
