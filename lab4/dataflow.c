@@ -45,10 +45,8 @@ Vertex* new_vertex(int i){
 }
 
 void computeIn(Vertex* u, list_t* worklist){
-    pthread_mutex_lock(&u->mutex);
 	BitSet_struct* old;
 	Vertex* v;
-
 
     while (pthread_mutex_trylock(&u->mutex) != 0) {
         pthread_cond_wait(&u->cond, &u->mutex);
@@ -59,7 +57,12 @@ void computeIn(Vertex* u, list_t* worklist){
         tmp_list = tmp_list->next;
 		v = tmp_list->data;
         if(v != NULL){
+            while (pthread_mutex_trylock(&v->mutex) != 0) {
+                pthread_cond_wait(&v->cond, &v->mutex);
+            }
 		    bitset_or(u->out, v->in);
+            pthread_mutex_unlock(&v->mutex);
+            pthread_cond_signal(&v->cond);
         }
 	}while(tmp_list->next != tmp_list);
 
@@ -76,15 +79,21 @@ void computeIn(Vertex* u, list_t* worklist){
 			v = tmp_list->data;
 			if(v != NULL){
                 if(!v->listed){
-                    printf("worklist: work added\n");
+                    while (pthread_mutex_trylock(&v->mutex) != 0) {
+                        pthread_cond_wait(&v->cond, &v->mutex);
+                    }
+                    //printf("worklist: work added\n");
 				    add_last(worklist, create_node(v));
 				    v->listed = true;
+                    pthread_mutex_unlock(&v->mutex);
+                    pthread_cond_signal(&v->cond);
                 }
 			}
 		}while(tmp_list->next != tmp_list);
 	}
 
     pthread_mutex_unlock(&u->mutex);
+    pthread_cond_signal(&u->cond);
 }
 
 void print_vertex(Vertex* v){
@@ -231,8 +240,8 @@ void* thread_func(void* ts){
 		u->listed = false;
 		computeIn(u, worklist);
         work_counter++;
-        printf("Thread[%u] worked %u iterations.\n", index, work_counter);
 	}
+    printf("Thread[%u] worked %u iterations.\n", index, work_counter);
     return NULL;
 }
 
@@ -271,10 +280,11 @@ void liveness(list_t* vertex_list, int nthread){
     }
 */
     for(int i = 0; i < nthread; ++i){
-        thread_struct ts;
-        ts.index = i;
-        ts.worklist = worklist[i];
-        status[i] = pthread_create(&thread[i], NULL, thread_func, &ts);
+        thread_struct* ts = malloc(sizeof(thread_struct));
+        ts->index = i;
+        //printf("i = %d\n", i);
+        ts->worklist = worklist[i];
+        status[i] = pthread_create(&thread[i], NULL, thread_func, ts);
     }
 
     for(int i = 0; i < nthread; ++i){
