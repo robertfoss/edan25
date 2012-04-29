@@ -26,7 +26,7 @@ typedef struct{
 	BitSet_struct* use;
 	BitSet_struct* def;
 	pthread_mutex_t mutex;
-    pthread_cond_t;
+    pthread_cond_t cond;
 } Vertex;
 
 Vertex* new_vertex(int i){
@@ -40,7 +40,7 @@ Vertex* new_vertex(int i){
 	v->use = bitset_create();
 	v->def = bitset_create();
     pthread_mutex_init(&v->mutex, NULL);
-    pthread_cond_init(&->cond, NULL);
+    pthread_cond_init(&v->cond, NULL);
 	return v;
 }
 
@@ -50,8 +50,8 @@ void computeIn(Vertex* u, list_t* worklist){
 	Vertex* v;
 
 
-    while (pthread_mutex_trylock(u->mutex) != 0) {
-        pthread_cond_wait(u->cond, u->mutex);
+    while (pthread_mutex_trylock(&u->mutex) != 0) {
+        pthread_cond_wait(&u->cond, &u->mutex);
     }
 
 	list_t* tmp_list = u->succ_list;
