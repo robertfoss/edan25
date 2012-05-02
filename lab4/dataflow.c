@@ -1,10 +1,12 @@
 #include <pthread.h>
-#include "bitset.h"
+//#include "bitset.h"
 #include "rand.h"
 #include <math.h>
 #include <sys/times.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include "list.h"
 
 bool print_input;
 int nvertex;
@@ -21,10 +23,10 @@ typedef struct{
 	bool listed;
 	list_t* pred_list;
 	list_t* succ_list;
-	BitSet_struct* in;
-	BitSet_struct* out;
-	BitSet_struct* use;
-	BitSet_struct* def;
+	unsigned int** in;
+	unsigned int** out;
+	unsigned int** use;
+	unsigned int** def;
 	pthread_mutex_t mutex;
     pthread_cond_t cond;
 } Vertex;
@@ -35,42 +37,174 @@ Vertex* new_vertex(int i){
 	v->listed = false;
 	v->pred_list = create_node(NULL); //First element = NULL
 	v->succ_list = create_node(NULL); //First element = NULL
-	v->in = bitset_create();
-	v->out = bitset_create();
-	v->use = bitset_create();
-	v->def = bitset_create();
+	v->in = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
+	v->out = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
+	v->use = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
+	v->def = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
     pthread_mutex_init(&v->mutex, NULL);
     pthread_cond_init(&v->cond, NULL);
 	return v;
 }
 
-void computeIn(Vertex* u, list_t* worklist){
-	BitSet_struct* old;
-	Vertex* v;
+void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
 
-    while (pthread_mutex_trylock(&u->mutex) != 0) {
-        pthread_cond_wait(&u->cond, &u->mutex);
+    unsigned int acquired_locks = 0;
+    unsigned int needed_locks = 1; // We know of Vertex* u.
+    unsigned int saved_locks = 0;
+    list_t* tmp_list;
+    Vertex* v;
+
+    tmp_list = succ_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        ++needed_locks;
+	}
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        ++needed_locks;
+	}
+    pthread_mutex_t mutexes[needed_locks];
+    pthread_cond_t conds[needed_locks];
+    mutexes[0] = u->mutex;
+    conds[0] = u->cond;
+    ++saved_locks;
+    
+
+    tmp_list = succ_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            mutexes[saved_locks] = v->mutex;
+            conds[saved_locks] = v->cond;
+            ++saved_locks;
+        }
+	}
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            mutexes[saved_locks] = v->mutex;
+            conds[saved_locks] = v->cond;
+            ++saved_locks;
+        }
+	}
+
+    // Acquire all or no locks.
+    while(1){
+        printf("while(1)\n");
+        acquired_locks = 0;
+        for(int i = 0; i < needed_locks; ++i){
+            if(pthread_mutex_trylock(&mutexes[i])){
+                ++acquired_locks;
+                if(acquired_locks == needed_locks){
+                    printf("Acquired all locks.\n");
+                    return;
+                }
+            } else {
+                printf("Failed to acquire lock.\n");
+                for(int j = 0; j < acquired_locks; ++j){
+                    printf("Freeing a lock.\n");
+                    pthread_mutex_unlock(&mutexes[j]);
+                    pthread_cond_signal(&conds[j]);
+                }
+                acquired_locks = 0;
+                //pthread_cond_wait(&conds[i], &mutexes[i]);
+                break; // Break out of for-loop.
+            }
+        }
     }
+}
+
+
+void unlock_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
+    Vertex* v;
+    list_t* tmp_list = succ_list;
+
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            pthread_mutex_unlock(&v->mutex);
+            pthread_cond_signal(&v->cond);
+        }
+	}
+    printf("Unlocked succ_list.\n");
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            pthread_mutex_unlock(&v->mutex);
+            pthread_cond_signal(&v->cond);
+        }
+	}
+    printf("Unlocked pred_list.\n");
+    pthread_mutex_unlock(&u->mutex);
+    pthread_cond_signal(&u->cond);
+    printf("Unlocked vertex.\n");
+}
+
+unsigned int** bitset_copy(unsigned int** bs){
+    unsigned int** new_bs = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
+    for(int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+        new_bs[i] = bs[i];
+    }
+    return new_bs;
+}
+
+bool bitset_equals(unsigned int** bs1, unsigned int** bs2){
+    for(int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+        if(bs1[i] != bs2[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
+void bitset_or(unsigned int** bs1, unsigned int** bs2){
+    for(int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+        *bs1[i] |= *bs2[i];
+    }
+}
+
+void bitset_and_not(unsigned int** bs1, unsigned int** bs2){
+    for(int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+        unsigned int tmp = *bs1[i] & *bs2[i];
+        tmp = ~tmp;
+        *bs1[i] = tmp & *bs1[i];
+    }
+}
+
+void computeIn(Vertex* u, list_t* worklist){
+	//BitSet_struct* old;
+	Vertex* v;
+    acquire_locks(u, u->succ_list, u->pred_list);
 
 	list_t* tmp_list = u->succ_list;
 	do{
         tmp_list = tmp_list->next;
 		v = tmp_list->data;
         if(v != NULL){
-            while (pthread_mutex_trylock(&v->mutex) != 0) {
-                pthread_cond_wait(&v->cond, &v->mutex);
-            }
 		    bitset_or(u->out, v->in);
-            pthread_mutex_unlock(&v->mutex);
-            pthread_cond_signal(&v->cond);
         }
 	}while(tmp_list->next != tmp_list);
 
-	old = bitset_copy(u->in);
-	u->in = bitset_create();
+	unsigned int** old = bitset_copy(u->in);
+    /*printf("old:\n");
+    bitset_print(old);*/
+	u->in = calloc( (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));//bitset_create();
 	bitset_or(u->in, u->out);
+    /*printf("after or #1:\n");
+    bitset_print(u->in);*/
 	bitset_and_not(u->in, u->def);
+    /*printf("after and not:\n");
+    bitset_print(u->in);*/
 	bitset_or(u->in, u->use);
+    /*printf("after or #2:\n");
+    bitset_print(u->in);*/
 
 	if(!bitset_equals(u->in, old)){
 		tmp_list = u->pred_list;
@@ -79,21 +213,13 @@ void computeIn(Vertex* u, list_t* worklist){
 			v = tmp_list->data;
 			if(v != NULL){
                 if(!v->listed){
-                    while (pthread_mutex_trylock(&v->mutex) != 0) {
-                        pthread_cond_wait(&v->cond, &v->mutex);
-                    }
-                    //printf("worklist: work added\n");
 				    add_last(worklist, create_node(v));
 				    v->listed = true;
-                    pthread_mutex_unlock(&v->mutex);
-                    pthread_cond_signal(&v->cond);
                 }
 			}
 		}while(tmp_list->next != tmp_list);
 	}
-
-    pthread_mutex_unlock(&u->mutex);
-    pthread_cond_signal(&u->cond);
+    unlock_locks(u, u->succ_list, u->pred_list);
 }
 
 void print_vertex(Vertex* v){
@@ -101,7 +227,9 @@ void print_vertex(Vertex* v){
 
 	printf("use[%d] = { ", v->index);
 	for (i = 0; i < nsym; ++i){
-		if (bitset_get_bit(v->use, i)){
+        unsigned int bit_offset = (unsigned int)((i / (sizeof(unsigned int) * 8))* (sizeof(unsigned int) * 8));
+        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
+		if ((*v->use[bit_offset] & (1 << bit_local_index))){//bitset_get_bit(v->use, i)){
 			printf("%d ", i);
 		}
 	}
@@ -109,7 +237,10 @@ void print_vertex(Vertex* v){
 	printf("def[%d] = { ", v->index);
 
 	for (i = 0; i < nsym; ++i){
-		if (bitset_get_bit(v->def, i)){
+        unsigned int bit_offset = (unsigned int)((i / (sizeof(unsigned int) * 8))* (sizeof(unsigned int) * 8));
+        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
+		if ((*v->def[bit_offset] & (1 << bit_local_index))){
+//		if (bitset_get_bit(v->def, i)){
 			printf("%d ", i);
 		}
 	}
@@ -117,7 +248,10 @@ void print_vertex(Vertex* v){
 	printf("in[%d] = { ", v->index);
 
 	for (i = 0; i < nsym; ++i){
-		if (bitset_get_bit(v->in, i)){
+        unsigned int bit_offset = (unsigned int)((i / (sizeof(unsigned int) * 8))* (sizeof(unsigned int) * 8));
+        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
+		if ((*v->in[bit_offset] & (1 << bit_local_index))){
+//		if (bitset_get_bit(v->in, i)){
 			printf("%d ", i);
 		}
 	}
@@ -125,7 +259,10 @@ void print_vertex(Vertex* v){
 	printf("out[%d] = { ", v->index);
 
 	for (i = 0; i < nsym; ++i){
-		if (bitset_get_bit(v->out, i)){
+        unsigned int bit_offset = (unsigned int)((i / (sizeof(unsigned int) * 8))* (sizeof(unsigned int) * 8));
+        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
+		if ((*v->out[bit_offset] & (1 << bit_local_index))){
+//		if (bitset_get_bit(v->out, i)){
 			printf("%d ", i);
 		}
 	}
@@ -202,19 +339,24 @@ void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
 			sym = abs(nextRand(r)) % nsym;
 
 
+            unsigned int bit_offset = (unsigned int)((sym / (sizeof(unsigned int) * 8))* (sizeof(unsigned int)));
+            printf("bit offset = %d\n", bit_offset);
+            printf("calloc(%d, %d)\n", (nsym / (sizeof(unsigned int) * 8) + 10), sizeof(unsigned int));
+            unsigned int bit_local_index = (unsigned int) (sym % (sizeof(unsigned int) * 8));
+
 			if (j % 4 != 0) {
-				if(!bitset_get_bit(v->def, sym)){
+				if(!(*v->def[bit_offset] & (1 << bit_local_index))){//!bitset_get_bit(v->def, sym)){
 					if(print_input){
 						printf(" u %d", sym);
 					}
-					bitset_set_bit(v->use, sym, true);
+					*v->use[bit_offset] |= (1 << bit_local_index);//bitset_set_bit(v->use, sym, true);
 				}
 			}else{
-				if(!bitset_get_bit(v->use, sym)){
+				if(!(*v->use[bit_offset] & (1 << bit_local_index))){//!bitset_get_bit(v->use, sym)){
 					if(print_input){
 						printf(" d %d", sym);
 					}
-					bitset_set_bit(v->def, sym, true);
+					*v->def[bit_offset] |= (1 << bit_local_index);//bitset_set_bit(v->def, sym, true);
 				}
 			}
 		}
