@@ -1,0 +1,4 @@
+#!/bin/sh
+
+make clean && (cd spu;make) && make
+./dataflow 100 8 4 10 6 f f

@@ -4,13 +4,13 @@ LIBS =  -lpthread -lm
 INCLUDES =
 SRCS = dataflow.c
 
-NSYM	= 1000
-NVERTEX	= 100
+NSYM	= 100
+NVERTEX	= 8
 MAXSUCC	= 4
 NACTIVE	= 10
 NTHREADS = 4
-PRINT_OUTPUT=true
-PRINT_INPUT=false
+PRINT_OUTPUT=false
+PRINT_INPUT=true
 
 all: dataflow
 
@@ -19,9 +19,9 @@ dataflow: dataflow.o list.o rand.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ dataflow.o list.o rand.o ${LIBS}
 	./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} > c_output.txt
 
-	javac DataflowCorrect.java && java -Xmx1024M Dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > java_output.txt
-	rm -f *.class
-	diff c_output.txt java_output.txt > diff.txt
+	#javac DataflowCorrect.java && java -Xmx1024M Dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NTHREADS) ${PRINT_OUTPUT} ${PRINT_INPUT} ${PRINT_DEBUG} > java_output.txt
+	#rm -f *.class
+	#diff c_output.txt java_output.txt > diff.txt
 
 bitset_test: bitset_test.o bitset.o list.o
 	${CC} ${CFLAGS} ${INCLUDES} -o $@ bitset_test.o bitset.o list.o ${LIBS}

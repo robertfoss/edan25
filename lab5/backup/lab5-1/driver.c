@@ -29,7 +29,6 @@
 #define TRACE2 if(0)
 #endif
 
-//#define DEBUG_SPU_MANAGER
 #ifdef DEBUG_SPU_MANAGER
 #define TRACE_SPU_MANAGER if(1)
 #else
@@ -51,20 +50,17 @@ typedef struct slist_t{
 
 extern spe_program_handle_t dataflow;
 char*		progname;
-unsigned int bitset_size;
 
 pthread_mutex_t wl_mutex;
 pthread_cond_t wl_cond;
 
-int acquired_locks_ctr;
+unsigned int acquired_locks_ctr;
 pthread_mutex_t acquired_locks_mutex;
 
 pthread_mutex_t* mutexes = NULL;
 vertex_t *vertices = NULL;
 slist_t *worklist = NULL;
 slist_t *worklist_last = NULL;
-
-void print_vertex_debug(vertex_t* v, int ppu_num);
 
 unsigned int spu_work_ctr[6][2];// DELETEME:
 unsigned int spu_work_next[6][100];// DELETEME:
@@ -131,7 +127,8 @@ void slist_insert_last(slist_t* last, void* wholock){
 }
 
 
-int slist_pop_first(){
+int slist_pop_first(void* wholock){
+    wholock = wholock;
     //printf("Thread with ctx: %p LOCK\n", wholock);
     pthread_mutex_lock(&wl_mutex);
 
@@ -139,25 +136,22 @@ int slist_pop_first(){
     if(worklist == NULL){
         pthread_mutex_unlock(&wl_mutex);
         //printf("Thread with ctx: %p UNLOCK\n", wholock);
-        //printf("nothing to pop\n");
         return -1; // Nothing to see here
     }
     int ret = worklist->v_index;
-    if(worklist == worklist_last || worklist->next == NULL){ //Only 1 element
-        //free(worklist);
+    if(worklist == worklist_last){ //Only 1 element
+        free(worklist);
         worklist = worklist_last = NULL;
         pthread_mutex_unlock(&wl_mutex);
         //printf("Thread with ctx: %p UNLOCK\n", wholock);
-        //printf("Popped %d from worklist\n", ret);
         return ret;
     }
-    //slist_t* tmp = worklist;
+    slist_t* tmp = worklist;
     worklist = worklist->next;
     worklist->prev = NULL;
-//    free(tmp);
+    free(tmp);
     pthread_mutex_unlock(&wl_mutex);
     //printf("Thread with ctx: %p UNLOCK\n", wholock);
-    //printf("Popped %d from worklist\n", ret);
     return ret;
 }
 
@@ -274,7 +268,6 @@ void* work(void *arg)
 	arg_t* data = arg;
 	unsigned int entry = SPE_DEFAULT_ENTRY;
 
-    printf("PPU-%d, Starting SPU-%d context.\n",data->spu_num,data->spu_num);
 	if (spe_context_run(data->ctx, &entry, 0, data->arg, NULL, NULL) < 0) {
 		perror("Failed running context");
 		exit (1);
@@ -286,9 +279,8 @@ void* work(void *arg)
 }
 
 
-int acquire_next_dummy(int wholock){
-    int ret = slist_pop_first();
-    printf("acquire_next_dummy%d: ret = %d\n", wholock, ret);
+int acquire_next_dummy(void * wholock){
+    int ret = slist_pop_first(wholock);
     return ret;
 }
 
@@ -349,13 +341,11 @@ bool acquire_locks(int v_index){
  */
 int acquire_next(int wholocked){
     int ret;
-
-    //printf("PPU acquire_next\n");
+    //printf("PPU aquire_next\n");
+    
     while(acquired_locks_ctr > 0 || worklist != NULL){
-        //printf("\n");
-        TRACE_ACQUIRE_NEXT slist_print_worklist();
-        ret = slist_pop_first();
-        TRACE_ACQUIRE_NEXT printf("PPU-%d acquired_locks_ctr=%u   ret=%d   worklist=",wholocked, acquired_locks_ctr, ret);
+        ret = slist_pop_first(NULL);
+        TRACE_ACQUIRE_NEXT printf("PPU-%d acquired_locks_ctr=%u   ret=%d   worklist=",wholocked, ret, acquired_locks_ctr);
         TRACE_ACQUIRE_NEXT slist_print_worklist();
         bool aq;
         if (ret != -1 && (aq = acquire_locks(ret))){ //Non empty list && lockable
@@ -444,7 +434,6 @@ void* spu_manager(void *arg){
     } else {
         mail.str.get_next_vertex = 1;
         mail.str.vertex_number = tmp_vertex;
-        //TRACE_SPU_MANAGER print_vertex_debug(&vertices[tmp_vertex], data->spu_num);
     }
 
     TRACE_SPU_MANAGER printf("PPU-%d first mbox write.\n", data->spu_num);
@@ -457,8 +446,7 @@ void* spu_manager(void *arg){
 
         TRACE_SPU_MANAGER printf("PPU-%d fst loop read.\n", data->spu_num);
         spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-        //printf("PPU recieved:\n");
-        //print_mail_t(mail_rec);
+
         TRACE_SPU_MANAGER printf("PPU-%d after fst loop read.\n", data->spu_num);
 
         if(mail_rec.str.vertex_done == 1){
@@ -476,7 +464,6 @@ void* spu_manager(void *arg){
         if(mail_rec.str.get_next_vertex == 1){
             TRACE_SPU_MANAGER printf("PPU-%d mail_rec.str.get_next_vertex == 1\n", data->spu_num);
             tmp_vertex = acquire_next(data->spu_num);
-            TRACE_SPU_MANAGER printf("after aq next\n");
             //slist_print_worklist();
         }
         if(tmp_vertex < 0){//|| mail_rec.str.complete_execution){
@@ -484,7 +471,6 @@ void* spu_manager(void *arg){
             mail.uint = 0;
             break;
         } else {
-            //TRACE_SPU_MANAGER print_vertex_debug(&vertices[tmp_vertex], data->spu_num);
             mail.str.get_next_vertex = 1;
             mail.str.vertex_number = tmp_vertex;
             spu_work_next[data->spu_num][spu_work_ctr[data->spu_num][0]] = tmp_vertex;
@@ -501,8 +487,8 @@ void* spu_manager(void *arg){
     }
     mail.str.complete_execution = 1;
 
-    //printf("PPU-%d loop complete! tell spu to complete execution.\n", data->spu_num);
-    
+    printf("PPU-%d loop complete! tell spu to complete execution.\n", data->spu_num);
+
     spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
     return NULL;
 }
@@ -540,12 +526,12 @@ int main(int argc, char** av)
 		    print_input = false;
 	    }
     } else {
-        nsym = 300;
-        nvertex = 30;
+        nsym = 100;
+        nvertex = 8;
         maxsucc = 4;
         nactive = 10;
-        nspu = 6;
-        print_output = true;
+        nspu = 5;
+        print_output = false;
 	    print_input = false;
     }
 
@@ -553,21 +539,21 @@ int main(int argc, char** av)
     param_t param[nspu] A16;
 	argc 		= argc; 	// to silence gcc...
 	progname	= av[0];
-    bitset_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
 
-	/*printf("nsym   = %zu\n", nsym);
+
+	printf("nsym   = %zu\n", nsym);
 	printf("nvertex   = %zu\n", nvertex);
 	printf("maxsucc   = %zu\n", maxsucc);
 	printf("nactive   = %zu\n", nactive);
 	printf("nspu   = %zu\n", nspu);
 	printf("param_t size   = %zu\n", sizeof(param_t));
 	printf("arg_t size  = %zu\n", sizeof(arg_t));
-    printf("bitset_size = %u\n", bitset_size);
-    printf("bitset_size (padded) = %u\n", pad_length( bitset_size) );
+    printf("bitset_size = %u\n", 50*(nsym / (sizeof(unsigned int) * 8)) + 1);
+    printf("bitset_size (padded) = %u\n", pad_length(50*(nsym / (sizeof(unsigned int) * 8)) + 1));
     printf("sizeof(int): %db\n", sizeof(int));
     printf("sizeof(void*): %db\n", sizeof(void*));
     printf("sizeof(char): %db\n", sizeof(char));
-    printf("sizeof(vertex_t): %db\n", sizeof(vertex_t));*/
+    printf("sizeof(vertex_t): %db\n", sizeof(vertex_t));
 
     pthread_mutex_init(&wl_mutex, NULL);
     pthread_mutex_init(&acquired_locks_mutex, NULL);
@@ -589,7 +575,7 @@ int main(int argc, char** av)
 		param[i].nvertex = nvertex;
         param[i].vertices = vertices;
         param[i].nsym = nsym;
-        param[i].bitset_size = pad_length( bitset_size );
+        param[i].bitset_size = pad_length( 50*(nsym / (sizeof(unsigned int) * 8)) + 1 );
 
 		if ((data[i].ctx = spe_context_create (0, NULL)) == NULL) {
 			perror ("Failed creating context");
@@ -615,6 +601,13 @@ int main(int argc, char** av)
 	}
 
 
+
+    if(print_output){
+        for(int i = 0; i < nvertex; ++i){
+            print_vertex(&vertices[i]);
+        }
+    }
+
 	for (int i = 0; i < nspu; ++i) {
 		errnum = pthread_join(data[i].pthread, NULL);
 		//printf("joining with PPU pthread %zu...\n", i);
@@ -630,33 +623,8 @@ int main(int argc, char** av)
 
 	end = sec();
 
-    if(print_output){
-        for(int i = 0; i < nvertex; ++i){
-            print_vertex(&vertices[i]);
-        }
-    }
-
-
 	printf("%1.3lf s\n", end-begin);
 
 	return 0;
-}
-
-void print_vertex_debug(vertex_t* v, int ppu_num){
-printf("\n*** PPU-%d vertices[%d] ***\nlisted: %d\npred: %p\nsucc: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\nsucc_count: %u\npred_count: %u\n", ppu_num, v->index, v->listed, (void*)v->pred_list, (void*)v->succ_list, (void*)v->in, (void*)v->out, (void*)v->use, (void*)v->def, v->succ_count, v->pred_count);
-    printf("succ_list: { ");
-    for(unsigned int i = 0; i < v->succ_count; ++i){
-        printf("%u ", v->succ_list[i]);
-    }
-    printf("}\npred_list: { ");
-    for(unsigned int i = 0; i < v->pred_count; ++i){
-        printf("%u ", v->pred_list[i]);
-    }
-    printf("}\nPPU-%d v[%d].use: { ", ppu_num, v->index);
-    for(unsigned int i = 0; i < (bitset_size/sizeof(unsigned int)); ++i){
-        printf("%u ", v->use[i]);
-    }
-    printf("}\nPPU-%d bitset_size=%u", ppu_num, bitset_size);
-    printf("\n----\n");
 }
 

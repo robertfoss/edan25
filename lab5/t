@@ -1,0 +1,8 @@
+#!/bin/sh
+
+make clean && (cd spu; make) && make
+./dataflow 300 30 4 10 1 t f #> cell_output.txt
+
+#../lab4/dataflow 300 30 4 10 1 t f > c_output.txt
+
+#diff cell_output.txt c_output.txt

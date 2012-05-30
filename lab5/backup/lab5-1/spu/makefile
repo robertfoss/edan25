@@ -5,7 +5,7 @@ LIBRARY_embed	:= lib_dataflow_spu.a
 INCLUDE		:= -I ..  -I /opt/cell/sdk/src/lib/sync/spu_source
 
 LDFLAGS		+= -lsync -L/opt/cell/sdk/src/lib/sync/spu
-CFLAGS		+= -O4 -Wall -pedantic -std=c99 -Werror -g
+CFLAGS		+= -O4 -Wall -pedantic -std=c99 -Werror
 
 IMPORTS     += -lmisc
 

@@ -1,0 +1,4 @@
+driver.c:   add a slist_move_node_last to avoid unneeded malloc/free when a pop:ed node isn't lockable.
+vertex.c:   connect() does 2 unneeded if == NULL checks. remove them
+            fetch_vertex -> arena
+dataflow.c: bitset_copy -> memcpy

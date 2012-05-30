@@ -12,6 +12,7 @@
 #include "driver.h"
 #include "vertex.h"
 
+//#define THOROUGH_ALIGNED_CALLOC
 
 #ifdef DEBUG1
 #define TRACE1 if(1)
@@ -25,7 +26,6 @@
 #define TRACE2 if(0)
 #endif
 
-//#define DEBUG_WORK
 #ifdef DEBUG_WORK
 #define TRACE_WORK if(1)
 #else
@@ -67,8 +67,8 @@ unsigned int pad_length(unsigned int input){
 }
 
 unsigned int* bitset_copy(unsigned int* bs){
-    mem += bitset_size;
-    unsigned int* new_bs = malloc(bitset_size);//aligned_malloc(pad_length(bitset_size), (size_t) ALIGN_CONSTANT);
+    mem += pad_length(bitset_size);
+    unsigned int* new_bs = malloc(pad_length(bitset_size));//aligned_malloc(pad_length(bitset_size), (size_t) ALIGN_CONSTANT);
     for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         new_bs[i] = bs[i];
     }
@@ -91,7 +91,7 @@ void bitset_or(unsigned int* bs1, unsigned int* bs2){
 }
 
 void bitset_and_not(unsigned int* bs1, unsigned int* bs2){
-    for(unsigned int i = 0; i < bitset_size / sizeof(unsigned int); ++i){
+    for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
         unsigned int tmp = bs1[i] & bs2[i];
         tmp = ~tmp;
         bs1[i] = tmp & bs1[i];
@@ -114,6 +114,35 @@ void print_spu_work(){
     printf("}\n");
 }
 
+/*void* aligned_malloc(size_t bytes, size_t alignment){
+    void *p1 ,*p2;
+    
+    //printf("SPU-%d mallocing\n", spu_num);
+    if(spu_num == 4) printf("SPU-%d aligned_malloc #1\tsize: %lu\n", spu_num, bytes + alignment + sizeof(size_t));
+    p1 = (void *) malloc(bytes + alignment + sizeof(size_t));
+    mem += bytes + alignment + sizeof(size_t);
+    if(spu_num == 4) printf("SPU-%d aligned_malloc malloc done\n", spu_num);
+
+    if((p1)==NULL){
+            if(spu_num == 4) printf("SPU-%d aligned_malloc #2\n", spu_num);
+            return NULL;
+    }
+    if(spu_num == 4) printf("SPU-%d aligned_malloc #3\n", spu_num);
+    size_t addr=(size_t)p1+alignment+sizeof(size_t);
+
+    p2=(void *)(addr - (addr%alignment));
+    
+    *((size_t *)p2-1)=(size_t)p1;
+
+    return p2;
+}
+
+
+void aligned_free(void *p )
+{
+    free((void *)(*((size_t *) p-1)));
+}
+*/
 
 void free_vertex(vertex_t* v){
     free_align(v->in);
@@ -193,84 +222,35 @@ void computeIn_dummy(unsigned int vertices_addr, unsigned index){
     }
     free_vertex(&v);
 }
-
-
 void computeIn(unsigned int vertices_addr, unsigned index){
-    
+    vertices_addr = vertices_addr;
+    index = index;
+
     unsigned int* old;
     vertex_t u = fetch_vertex(vertices_addr, index);
     vertex_t v;
 
-    //printf("computeIn: vertices_addr=%u\tindex=%u\n", vertices_addr, index);
-    for(unsigned int i = 0; i < u.succ_count; ++i){
-        //printf("computeInt wants to fetch %u.succ_list[%u] = %u\n", index, i, u.succ_list[i]);
+    for(unsigned int i = 0; i < v.succ_count; ++i){
         v = fetch_vertex(vertices_addr, u.succ_list[i]);
         bitset_or(u.out, v.in);
         free_vertex(&v);
     }
 
-    mfc_write_tag_mask(1<<tag[1]);
-    mfc_put(u.out,  (unsigned int) u.out_backup, bitset_size, tag[1], 0, 0);
-
-
-
     old = bitset_copy(u.in);
 
-
-
-	memset(u.in, 0, bitset_size);
+#ifdef THOROUGH_ALIGNED_CALLOC
+    if(pad_length(bitset_size) < sizeof(unsigned int)){
+        printf("THOROUGH_ALIGNED_CALLOC: Failed!");
+        exit(0);
+    }
+#endif
+	memset(&u.in, 0, pad_length(bitset_size));
 	bitset_or(u.in, u.out);
-   /* printf("computeIn BEFORE and_not: u.def[%d] (%p) = { ", index, (void*)u.def);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((u.def[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");
-    printf("computeIn BEFORE and_not: u.in[%d] (%p) = { ", index, (void*)u.in);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((u.in[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");*/
-
 	bitset_and_not(u.in, u.def);
-
-    /*printf("computeIn AFTER and_not: u.def[%d] (%p) = { ", index, (void*)u.def);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((u.def[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");
-    printf("computeIn AFTER and_not: u.in[%d] (%p) = { ", index, (void*)u.in);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((u.in[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");*/
-
-
-
 	bitset_or(u.in, u.use);
 
-
-
     if(!bitset_equals(u.in, old)){
-        mfc_put( u.in,  (unsigned int) u.in_backup, bitset_size, tag[1], 0, 0);
-
         for(unsigned int i = 0; i < u.pred_count; ++i){
-            //printf("computeInt wants to fetch %u.pred_list[%u] = %u\n", index, i, u.succ_list[i]);
             v = fetch_vertex(vertices_addr, u.pred_list[i]);
             if(!v.listed){
                 requeue_vertex(v.index);
@@ -278,20 +258,9 @@ void computeIn(unsigned int vertices_addr, unsigned index){
             free_vertex(&v);
         }
     }
-
-    /*printf("computeIn writeback: u.in[%d] (%p) = { ", index, (void*)u.in);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((u.in[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");
-*/
     free_mem += pad_length(bitset_size);
+    //TODO write_bitset(u, bs);
     free(old);
-    mfc_read_tag_status_any();
 }
 
 void print_mail_t(mail_t mail){
@@ -305,35 +274,29 @@ void print_mail_t(mail_t mail){
 }
 
 
-void work(unsigned int host_vertex_ptr2){
+void work(unsigned int host_vertex_ptr){
     // WARNING! ASSUMPTIONS AHEAD! .start_execution is assumed to be delivered with the first vertex.
+    //printf("WORK\n");
     mail_t mail; // Warning! Is a union used to convert between unsigned ints and a bitfield. mail.uint / mail.str.*
     mail.uint = spu_read_in_mbox();
 
-
-    static volatile unsigned int host_vertex_ptr; // Prevent gcc from optimizing..
-    host_vertex_ptr = host_vertex_ptr2;
-
-    unsigned int vertex_nbr; 
+    unsigned int vertex_nbr;
     while(!mail.str.start_execution){
         mail.uint = spu_read_in_mbox();
         TRACE_WORK printf("SPU-%d waiting for start_execution: \n", spu_num);
+
     }
-
-    //printf("SPU recieved (before loop):\n");
-    //print_mail_t(mail);
-
-    TRACE_WORK printf("start exec SPU\n");
+    //printf("start exec SPU\n");
     while(! mail.str.complete_execution){
 
-        //printf("SPU-%d mem = %u, free_mem = %u, diff = %d\n", spu_num, mem, free_mem, mem - free_mem);
+        printf("SPU %d mem = %u, free_mem = %u, diff = %d\n", spu_num, mem, free_mem, mem - free_mem);
 
         vertex_nbr = mail.str.vertex_number;
         spu_work_next[spu_work_ctr[0]] = vertex_nbr;
         spu_work_ctr[0] +=1;
-        //printf("work: host_vertex_ptr = %d\n", host_vertex_ptr);
-        computeIn(host_vertex_ptr, vertex_nbr);
-        //printf("computein done\n");
+
+        computeIn_dummy(host_vertex_ptr, vertex_nbr);
+
         mail.uint = 0;
         mail.str.vertex_done = 1;
         mail.str.get_next_vertex = 1;
@@ -349,8 +312,6 @@ void work(unsigned int host_vertex_ptr2){
         //print_spu_work();
         TRACE_WORK printf("SPU-%d read in while: \n", spu_num);
         mail.uint = spu_read_in_mbox();
-        //printf("SPU recieved (in loop):\n");
-        //print_mail_t(mail);
     }
     TRACE_WORK printf("SPU-%d complete_execution recieved: \n", spu_num);
 
@@ -364,7 +325,7 @@ void work(unsigned int host_vertex_ptr2){
 void* safe_dma(unsigned int host_addr, unsigned int fetch_size, unsigned int tag){
     unsigned int* tmp;
 
-    if(fetch_size <= 16){
+    if(fetch_size <= 16384){
         tmp = malloc_align(fetch_size, ALIGN_EXP);//aligned_malloc(fetch_size, 16);
         mfc_get(tmp, (unsigned int) host_addr, fetch_size, tag, 0, 0);
     } else {
@@ -372,10 +333,10 @@ void* safe_dma(unsigned int host_addr, unsigned int fetch_size, unsigned int tag
         unsigned int j = 0;
         unsigned int fetch_subsize = 0;
         while(j < fetch_size){
-            fetch_subsize = ((fetch_size - j) < 16) ? (fetch_size - j) : 16;
+            fetch_subsize = ((fetch_size - j) < 16384) ? (fetch_size - j) : 16384;
             //printf("SPU-%d safe_dma\tfetch_size=%d   j=%d   fetch_subsize=%d\n", spu_num, fetch_size, j, fetch_subsize);
             mfc_get(tmp+j, (unsigned int) (host_addr+j), fetch_subsize, tag, 0, 0);
-            j += 16;
+            j += 16384;
         }
     }
     return tmp;
@@ -383,7 +344,7 @@ void* safe_dma(unsigned int host_addr, unsigned int fetch_size, unsigned int tag
 
 vertex_t fetch_vertex(unsigned int host_vertex_ptr, unsigned int index){
     vertex_t v A16;
-    //printf("SPU fetch_vertex[%u]: host_vertex_ptr = %u\n", index, host_vertex_ptr);
+    
     host_vertex_ptr += index * sizeof(vertex_t);
 
     mfc_get((void *)&v, host_vertex_ptr, sizeof(vertex_t), tag[0], 0, 0);
@@ -396,34 +357,33 @@ vertex_t fetch_vertex(unsigned int host_vertex_ptr, unsigned int index){
     mem += 4 * bitset_size;
 
 //safe_dma(unsigned int host_addr, unsigned int fetch_size, unsigned int tag)
-/*
+
     v.in = safe_dma((unsigned int) v.in, bitset_size, tag[0]);
     v.out = safe_dma((unsigned int) v.out, bitset_size, tag[1]);
     v.use = safe_dma((unsigned int) v.use, bitset_size, tag[2]);
     v.def = safe_dma((unsigned int) v.def, bitset_size, tag[3]);
-*/
-    unsigned int* tmp;
 
-    tmp = malloc_align(bitset_size, ALIGN_EXP);//aligned_malloc(bitset_size, 16);
+    unsigned int* tmp;
+    /*tmp = malloc_align(bitset_size, ALIGN_EXP);//aligned_malloc(bitset_size, 16);
     mfc_get(tmp, (unsigned int) v.in, bitset_size, tag[0], 0, 0);
     v.in = tmp;
 
 
     tmp = malloc_align(bitset_size, ALIGN_EXP);
-    mfc_get(tmp, (unsigned int) v.out, bitset_size, tag[0], 0, 0);
+    mfc_get(tmp, (unsigned int) v.out, bitset_size, tag[1], 0, 0);
     v.out = tmp;
 
     tmp = malloc_align(bitset_size, ALIGN_EXP);
-    mfc_get(tmp, (unsigned int) v.use, bitset_size, tag[0], 0, 0);
+    mfc_get(tmp, (unsigned int) v.use, bitset_size, tag[2], 0, 0);
     v.use = tmp;
 
     tmp = malloc_align(bitset_size, ALIGN_EXP);
-    mfc_get(tmp, (unsigned int) v.def, bitset_size, tag[0], 0, 0);
-    v.def = tmp;
+    mfc_get(tmp, (unsigned int) v.def, bitset_size, tag[3], 0, 0);
+    v.def = tmp;*/
 
-/* CANDIDATE FOR REMOVAL
-    mfc_write_tag_mask(1<<tag[0]);
+    mfc_write_tag_mask(1<<tag[0] | 1<<tag[1] | 1<<tag[2] | 1<<tag[3]);
     mfc_read_tag_status_any();
+
     int free_tag = mfc_read_tag_status_immediate();
     if(free_tag & (1 << tag[0])){
         free_tag = tag[0];
@@ -434,69 +394,45 @@ vertex_t fetch_vertex(unsigned int host_vertex_ptr, unsigned int index){
     } else if (free_tag & (1 << tag[3])){
         free_tag = tag[3];
     }
-*/
-    unsigned int *sa = 0, *pa = 0;
+
     if(v.succ_count != 0){
         mem += pad_length(v.succ_count) * sizeof(unsigned int);
         tmp = malloc(pad_length(v.succ_count)*sizeof(unsigned int));
-        mfc_get(tmp, (unsigned int) v.succ_list, pad_length(v.succ_count)*sizeof(unsigned int), tag[0], 0, 0);
-        sa = v.succ_list;
+        mfc_get(tmp, (unsigned int) v.succ_list, pad_length(v.succ_count), tag[4], 0, 0);
         v.succ_list = tmp;
     }
 
     if(v.pred_count != 0){
         mem += pad_length(v.pred_count) * sizeof(unsigned int);
         tmp = malloc(pad_length(v.pred_count) * sizeof(unsigned int));
-        mfc_get(tmp, (unsigned int) v.pred_list, pad_length(v.pred_count)*sizeof(unsigned int), tag[0], 0, 0);
-        pa = v.pred_list;
+        mfc_get(tmp, (unsigned int) v.pred_list, pad_length(v.pred_count), free_tag, 0, 0);
         v.pred_list = tmp;
     }
-    mfc_write_tag_mask(1<<tag[0]);
+
+    mfc_write_tag_mask(1<<tag[0] | 1<<tag[1] | 1<<tag[2] | 1<<tag[3] | 1<<tag[4]);
     mfc_read_tag_status_all();
 
-
-    /*printf("\n*** SPU-%d vertices[%d] ***\nlisted: %d\npred: %p (%p)\nsucc: %p (%p)\nin: %p\nout: %p\nuse: %p\ndef: %p\nsucc_count: %u\npred_count: %u\n", spu_num, v.index, v.listed, (void*)v.pred_list, (void*)pa, (void*)v.succ_list, (void*)sa, (void*)v.in, (void*)v.out, (void*)v.use, (void*)v.def, v.succ_count, v.pred_count);
+    printf("\n*** SPU-%d vertices[%d] ***\nlisted: %d\npred: %p\nsucc: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\nsucc_count: %u\npred_count: %u\n", spu_num, v.index, v.listed, (void*)v.pred_list, (void*)v.succ_list, (void*)v.in, (void*)v.out, (void*)v.use, (void*)v.def, v.succ_count, v.pred_count);
     printf("succ_list: { ");
     for(unsigned int i = 0; i < v.succ_count; ++i){
-        printf("%u ", v.succ_list[i]);
+        printf("%d ", v.succ_list[i]);
     }
     printf("}\npred_list: { ");
     for(unsigned int i = 0; i < v.pred_count; ++i){
-        printf("%u ", v.pred_list[i]);
+        printf("%d ", v.pred_list[i]);
     }
-    printf("}\nSPU-%d v[%d].use: { ", spu_num, v.index);
+    printf("}\n----\n");
+    printf("SPU-%d v[%d].in: { ", spu_num, v.index);
     for(unsigned int i = 0; i < (bitset_size/sizeof(unsigned int)); ++i){
         printf("%u ", v.use[i]);
     }
-    printf("}\nSPU-%d v[%d].use: { ", spu_num, v.index);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((v.use[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-    printf("}\nSPU-%d v[%d].def: { ", spu_num, v.index);
-    for(unsigned int i = 0; i < (bitset_size/sizeof(unsigned int)); ++i){
-        printf("%u ", v.def[i]);
-    }
-    printf("}\nSPU-%d v[%d].def: { ", spu_num, v.index);
-	for (unsigned int i = 0; i < bitset_size; ++i){
-        unsigned int bit_offset = (i / (sizeof(unsigned int) * 8));
-        unsigned int bit_local_index = (unsigned int) (i % (sizeof(unsigned int) * 8));
-		if ((v.def[bit_offset] & (1 << bit_local_index))){
-			printf("%d ", i);
-		}
-	}
-	printf("}\n");
-    printf("}\nSPU-%d bitset_size=%u", spu_num, bitset_size);
-    printf("\n----\n");*/
+    printf("}\n");
     return v;
 }
 
 int main(unsigned long long id, unsigned long long parm)
 {
-    printf("SPU, id: %llu\n", id);
+    //printf("SPU, id: %llu\n", id);
     id = id;
 	spu_writech(MFC_WrTagMask, -1); 
 	spu_mfcdma32((void *)&param, (unsigned int)parm, sizeof(param_t), 0, MFC_GET_CMD); //TODO: Maybe reserve tag number.                

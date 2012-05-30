@@ -52,7 +52,6 @@ Vertex* new_vertex(int i){
 }
 
 void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
-
     unsigned int acquired_locks = 0;
     unsigned int needed_locks = 1; // We know of Vertex* u.
     unsigned int saved_locks = 0;

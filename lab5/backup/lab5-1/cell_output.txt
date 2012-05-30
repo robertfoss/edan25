@@ -1,0 +1,122 @@
+nsym   = 100
+nvertex   = 8
+maxsucc   = 4
+nactive   = 10
+nspu   = 1
+param_t size   = 32
+arg_t size  = 16
+bitset_size = 151
+bitset_size (padded) = 160
+sizeof(int): 4b
+sizeof(void*): 4b
+sizeof(char): 1b
+[2] succ = { 0}
+[3] succ = {}
+[4] succ = {}
+[5] succ = {}
+[6] succ = {}
+[7] succ = {}
+[0] usedef = { d 0 u 68 u 5 u 86 d 11 u 83 u 55 u 80 d 4 u 96}
+[1] usedef = { d 40 u 16 u 19 u 76 d 69 u 62 u 83 u 17 d 84 u 15}
+[2] usedef = { d 54 u 9 u 6 u 15 d 55 u 28 u 75 u 28 d 7 u 41}
+[3] usedef = { d 72 u 57 u 50 u 62 d 42 u 32 u 24 u 22 d 65 u 60}
+[4] usedef = { d 53 u 44 u 42 u 57 d 66 u 94 u 24 u 10 d 13 u 20}
+[5] usedef = { d 25 u 79 u 46 u 4 d 59 u 93 u 5 u 97 d 28 u 42}
+[6] usedef = { d 65 u 90 u 62 u 10 d 80 u 56 u 42 u 77 d 0 u 93}
+[7] usedef = { d 12 u 71 u 13 u 8 d 51 u 41 u 62 u 68 u 10}
+use[0] = { 5 55 68 80 83 86 96 }
+def[0] = { 0 4 11 }
+
+in[0] = { }
+out[0] = { }
+
+use[1] = { 15 16 17 19 62 76 83 }
+def[1] = { 40 69 84 }
+
+in[1] = { }
+out[1] = { }
+
+use[2] = { 6 9 15 28 41 75 }
+def[2] = { 7 54 55 }
+
+in[2] = { }
+out[2] = { }
+
+use[3] = { 22 24 32 50 57 60 62 }
+def[3] = { 42 65 72 }
+
+in[3] = { }
+out[3] = { }
+
+use[4] = { 10 20 24 42 44 57 94 }
+def[4] = { 13 53 66 }
+
+in[4] = { }
+out[4] = { }
+
+use[5] = { 4 5 42 46 79 93 97 }
+def[5] = { 25 28 59 }
+
+in[5] = { }
+out[5] = { }
+
+use[6] = { 10 42 56 62 77 90 93 }
+def[6] = { 0 65 80 }
+
+in[6] = { }
+out[6] = { }
+
+use[7] = { 8 10 13 41 62 68 71 }
+def[7] = { 12 51 }
+
+in[7] = { }
+out[7] = { }
+
+
+*** PPU vertices[3] ***
+index: 3
+listed: 0
+pred: 25293472
+succ: 25293488
+in: 25296384
+out: 25296640
+use: 25296896
+def: 25297152
+** PPU vertices[3]
+0.001 s
+joining with PPU pthread 0...
+SPU-0 initiated, with tags{0, 1, 2, 3, 4}
+
+*** SPU-0 vertices[3] #1 ***
+index: 3
+listed: 0
+pred: 25293472
+succ: 25293488
+in: 25296384
+out: 25296640
+use: 25296896
+def: 25297152
+----
+
+bitset_size (in SPU-0): 160
+tmp: 9056
+v: 261904
+v.in: 25296384
+
+*** SPU-0 vertices[3] #2 ***
+index: 3
+listed: 0
+pred: 25293472
+succ: 25293488
+in: 261856
+out: 25296640
+use: 25296896
+def: 25297152
+----
+use[3] = { }
+def[3] = { }
+
+in[3] = { 4 6 9 11 12 13 14 15 16 17 38 42 44 46 47 48 49 68 70 73 75 76 77 78 79 80 81 }
+out[3] = { }
+
+PPU pthread sees SPU has terminated.
