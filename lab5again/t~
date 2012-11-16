@@ -1,0 +1,13 @@
+#!/bin/sh
+
+make clean && (cd spu; make -j 4) && make -j 4
+./dataflow 100 10 4 10 1 2 t t > cell-no-cell_output.txt
+
+make clean && (cd spu; make) && make XTRACFLAGS=-DUSE_CELL
+./dataflow 100 10 4 10 1 6 t t > cell-with-cell_output.txt
+
+#(cd ../lab4; make)
+# ../lab4/dataflow 100 8 4 10 1 t t > c_output.txt
+
+#diff c_output.txt cell-no-cell_output.txt
+diff cell-with-cell_output.txt cell-no-cell_output.txt

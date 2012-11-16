@@ -1,0 +1,250 @@
+nsym   = 500
+nvertex   = 8
+maxsucc   = 4
+nactive   = 10
+alloc_size   = 752
+Generating CFG..
+[2] succ = { 0}
+[3] succ = {}
+[4] succ = {}
+[5] succ = {}
+[6] succ = {}
+[7] succ = {}
+Generating UseDef
+[0] usedef = { d 300 u 168 u 405 u 286 d 411 u 483 u 255 u 380 d 404 u 496}
+[1] usedef = { d 240 u 316 u 19 u 476 d 369 u 262 u 483 u 417 d 184 u 315}
+[2] usedef = { d 454 u 109 u 406 u 115 d 255 u 228 u 75 u 228 d 7 u 41}
+[3] usedef = { d 172 u 57 u 150 u 62 d 242 u 332 u 324 u 122 d 65 u 260}
+[4] usedef = { d 353 u 444 u 42 u 457 d 266 u 194 u 24 u 410 d 113 u 120}
+[5] usedef = { d 325 u 179 u 146 u 104 d 259 u 393 u 305 u 297 d 28 u 142}
+[6] usedef = { d 465 u 90 u 362 u 10 d 280 u 356 u 442 u 77 d 400 u 393}
+[7] usedef = { d 212 u 71 u 13 u 8 d 351 u 41 u 362 u 168 d 141 u 210}
+Creating SPU context
+Setting SPU params for 0
+PPU param.proc : 0
+Setting SPU params for 1
+PPU param.proc : 1
+PPU-0, Starting SPU-0 context.
+SPU parm: 4294075808
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+Setting SPU params for 2
+PPU param.proc : 2
+PPU-1, Starting SPU-1 context.
+SPU parm: 4294075840
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+Setting SPU params for 3
+PPU param.proc : 3
+PPU-2, Starting SPU-2 context.
+SPU parm: 4294075872
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+Setting SPU params for 4
+PPU param.proc : 4
+PPU-3, Starting SPU-3 context.
+SPU parm: 4294075904
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+Setting SPU params for 5
+PPU param.proc : 5
+PPU-4, Starting SPU-4 context.
+SPU parm: 4294075936
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+liveness()
+PPU-5, Starting SPU-5 context.
+Splitting worklist..
+Allocing thread_structs
+Thread[0] in thread_func()
+PPU spu_bitset_megaop() sending msg #0
+PPU spu_bitset_megaop() waiting for message.. 0
+SPU received #0
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 0
+PPU spu_bitset_megaop() received message #0
+SPU parm: 4294075968
+PPU spu_bitset_megaop() sending msg #1
+PPU spu_bitset_megaop() waiting for message.. 1
+SPU received #1
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 1
+PPU spu_bitset_megaop() received message #1
+SPU[0] initiated, with tags{0, 1, 2, 3, 4}
+PPU spu_bitset_megaop() sending msg #2
+PPU spu_bitset_megaop() waiting for message.. 2
+SPU received #2
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 2
+PPU spu_bitset_megaop() received message #2
+PPU spu_bitset_megaop() sending msg #3
+PPU spu_bitset_megaop() waiting for message.. 3
+SPU received #3
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 3
+PPU spu_bitset_megaop() received message #3
+PPU spu_bitset_megaop() sending msg #4
+PPU spu_bitset_megaop() waiting for message.. 4
+SPU received #4
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 4
+PPU spu_bitset_megaop() received message #4
+PPU spu_bitset_megaop() sending msg #5
+PPU spu_bitset_megaop() waiting for message.. 5
+SPU received #5
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 5
+PPU spu_bitset_megaop() received message #5
+PPU spu_bitset_megaop() sending msg #6
+PPU spu_bitset_megaop() waiting for message.. 6
+SPU received #6
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 6
+PPU spu_bitset_megaop() received message #6
+PPU spu_bitset_megaop() sending msg #7
+PPU spu_bitset_megaop() waiting for message.. 7
+SPU received #7
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 7
+PPU spu_bitset_megaop() received message #7
+PPU spu_bitset_megaop() sending msg #0
+PPU spu_bitset_megaop() waiting for message.. 0
+SPU received #0
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 0
+PPU spu_bitset_megaop() received message #0
+PPU spu_bitset_megaop() sending msg #2
+PPU spu_bitset_megaop() waiting for message.. 2
+SPU received #2
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 2
+PPU spu_bitset_megaop() received message #2
+PPU spu_bitset_megaop() sending msg #0
+PPU spu_bitset_megaop() waiting for message.. 0
+SPU received #0
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+before mfc_get
+after mfc_get
+SPU sending 0
+PPU spu_bitset_megaop() received message #0
+Thread[0] worked 11 iterations.
+spu_quit()
+c runtime = 0.004448 s
+use[0] = { 168 255 286 380 405 483 496 }
+def[0] = { 300 404 411 }
+
+in[0] = { 19 41 75 109 115 168 228 255 262 286 315 316 380 405 406 417 476 483 496 }
+out[0] = { 19 41 75 109 115 168 228 262 286 315 316 380 405 406 417 476 483 496 }
+
+use[1] = { 19 262 315 316 417 476 483 }
+def[1] = { 184 240 369 }
+
+in[1] = { 19 262 315 316 417 476 483 }
+out[1] = { }
+
+use[2] = { 41 75 109 115 228 406 }
+def[2] = { 7 255 454 }
+
+in[2] = { 19 41 75 109 115 168 228 262 286 315 316 380 405 406 417 476 483 496 }
+out[2] = { 19 41 75 109 115 168 228 255 262 286 315 316 380 405 406 417 476 483 496 }
+
+use[3] = { 57 62 122 150 260 324 332 }
+def[3] = { 65 172 242 }
+
+in[3] = { 57 62 122 150 260 324 332 }
+out[3] = { }
+
+use[4] = { 24 42 120 194 410 444 457 }
+def[4] = { 113 266 353 }
+
+in[4] = { 24 42 120 194 410 444 457 }
+out[4] = { }
+
+use[5] = { 104 142 146 179 297 305 393 }
+def[5] = { 28 259 325 }
+
+in[5] = { 104 142 146 179 297 305 393 }
+out[5] = { }
+
+use[6] = { 10 77 90 356 362 393 442 }
+def[6] = { 280 400 465 }
+
+in[6] = { 10 77 90 356 362 393 442 }
+out[6] = { }
+
+use[7] = { 8 13 41 71 168 210 362 }
+def[7] = { 141 212 351 }
+
+in[7] = { 8 13 41 71 168 210 362 }
+out[7] = { }
+
