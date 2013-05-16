@@ -29,7 +29,7 @@ dataflow.o dataflow.i dataflow.lst dataflow.d : dataflow.c \
   /usr/lib/gcc/spu/4.1.1/include/stdbool.h \
   /usr/lib/gcc/spu/4.1.1/../../../../spu/include/string.h \
   /usr/lib/gcc/spu/4.1.1/../../../../spu/include/sys/string.h \
-  $(CELL_TOP)/usr/spu/include/libmisc.h ../driver.h ../vertex.h \
-  ../list.h /usr/lib/gcc/spu/4.1.1/../../../../spu/include/stdlib.h \
+  $(CELL_TOP)/usr/spu/include/libmisc.h ../driver.h ../list.h \
+  /usr/lib/gcc/spu/4.1.1/../../../../spu/include/stdlib.h \
   /usr/lib/gcc/spu/4.1.1/../../../../spu/include/machine/stdlib.h \
   /usr/lib/gcc/spu/4.1.1/../../../../spu/include/alloca.h ../vertex.h

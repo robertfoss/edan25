@@ -1,8 +1,26 @@
-#!/bin/sh
+#!/bin/bash
+
+N_SYM=100
+N_VERTEX=8
+MAX_SUCC=4
+N_ACTIVE=10
+N_THREAD=1
+N_SPU=1
+PRINT_OUTPUT=t
+PRINT_INPUT=t
+
+
+make clean && (cd spu; make) && make XTRACFLAGS=-DUSE_CELL
+./dataflow $N_SYM $N_VERTEX $MAX_SUCC $N_ACTIVE $N_THREAD $N_SPU $PRINT_OUTPUT $PRINT_INPUT > cell-with-cell_output.txt
+# make clean && (cd spu; make) && make XTRACFLAGS=-DUSE_CELL; ./dataflow 100 8 4 10 1 1 t t
 
 make clean && (cd spu; make) && make
-./dataflow 300 30 4 10 1 t f #> cell_output.txt
+./dataflow $N_SYM $N_VERTEX $MAX_SUCC $N_ACTIVE $N_THREAD $N_SPU $PRINT_OUTPUT $PRINT_INPUT > cell-no-cell_output.txt
+# make clean && (cd spu; make) && make; ./dataflow 100 8 4 10 1 1 t t
 
-#../lab4/dataflow 300 30 4 10 1 t f > c_output.txt
+#(cd ../lab4; make)
+# ../lab4/dataflow 100 8 4 10 1 t t > c_output.txt
 
-#diff cell_output.txt c_output.txt
+#diff c_output.txt cell-no-cell_output.txt
+diff cell-with-cell_output.txt cell-no-cell_output.txt
+

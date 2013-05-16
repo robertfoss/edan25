@@ -1,3 +1,0 @@
-#!/bin/bash
-
-for i in {1..20}; do ./dataflow 300 30 4 10 6 t f; done

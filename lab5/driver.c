@@ -1,255 +1,71 @@
-#include <assert.h>
-#include <string.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <inttypes.h>
-#include <sys/time.h>
 #include <pthread.h>
-#include <libspe2.h>
+#include <math.h>
+#include <sys/times.h>
+#include <sys/time.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include <libspe2.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "driver.h"
-#include "error.h"
-#include "vertex.h"
+#include "list.h"
+#include "rand.h"
 
-//#define THOROUGH_FREE_LOCKS
-
-#ifdef DEBUG1
-#define TRACE1 if(1)
-#else
-#define TRACE1 if(0)
-#endif
-
-#ifdef DEBUG2
-#define TRACE2 if(1)
-#else
-#define TRACE2 if(0)
-#endif
-
-//#define DEBUG_SPU_MANAGER
-#ifdef DEBUG_SPU_MANAGER
-#define TRACE_SPU_MANAGER if(1)
-#else
-#define TRACE_SPU_MANAGER if(0)
-#endif
-
-//#define DEBUG_ACQUIRE_NEXT
-#ifdef DEBUG_ACQUIRE_NEXT
-#define TRACE_ACQUIRE_NEXT if(1)
-#else
-#define TRACE_ACQUIRE_NEXT if(0)
-#endif
-
-typedef struct slist_t{
-    struct slist_t* prev;
-    struct slist_t* next;
-    int v_index;
-} slist_t;
-
-extern spe_program_handle_t dataflow;
-char*		progname;
-unsigned int bitset_size;
-
-pthread_mutex_t wl_mutex;
-pthread_cond_t wl_cond;
-
-int acquired_locks_ctr;
-pthread_mutex_t acquired_locks_mutex;
-
-pthread_mutex_t* mutexes = NULL;
-vertex_t *vertices = NULL;
-slist_t *worklist = NULL;
-slist_t *worklist_last = NULL;
-
-void print_vertex_debug(vertex_t* v, int ppu_num);
-
-unsigned int spu_work_ctr[6][2];// DELETEME:
-unsigned int spu_work_next[6][100];// DELETEME:
-unsigned int spu_work_returned[6][100];// DELETEME:
-
-void print_spu_work(){
-    for(unsigned int i=0;i < 6; ++i){
-        printf("spu_%d_work_next{",i);
-        for(unsigned int j = 0; j < spu_work_ctr[i][0]; ++j){
-            printf("%d ",  spu_work_next[i][j]);
-        }
-        printf("}\nspu_%d_work_return{",i);
-        for(unsigned int j = 0; j < spu_work_ctr[i][1]; ++j){
-            printf("%d ",  spu_work_next[i][j]);
-        }
-        printf("}\n");
-    }
-}
-
-typedef struct {
+typedef struct{
 	spe_context_ptr_t	ctx;
 	pthread_t		pthread;
-	pthread_t		manager_pthread;
     unsigned short	spu_num;
 	void*			arg;
 } arg_t A16;
 
 
-slist_t* slist_create_node(int v_index){
-	slist_t* tmp = malloc(sizeof(slist_t));
-	tmp->next = tmp->prev = NULL;
-	tmp->v_index = v_index;
-	return tmp;
-}
+
+typedef struct{
+	int index;
+	bool listed;
+	list_t* pred_list;
+	list_t* succ_list;
+	pthread_mutex_t mutex;
+    pthread_cond_t cond;
+} Vertex;
+
+extern spe_program_handle_t dataflow;
+
+bool print_input;
+int nvertex;
+int	nsym;
+int nspu;
+unsigned int alloc_size;
+unsigned int bitset_subsets;
+arg_t   data[MAX_SPUS];
+char*		progname;
 
 
-bool slist_contains(int v_index){
-    slist_t* tmp = worklist;
-    while(tmp != NULL){
-        if(tmp->v_index == v_index){
-            return true;
-        }
-        tmp = tmp->next;
-    }
-    return false;
-}
+unsigned int *in, *out, *use, *def;
+
+pthread_mutex_t spu_quit_mutex;
+pthread_mutex_t spu_round_robin_mutex;
+int spu_round_robin = 0;
 
 
-void slist_insert_last(slist_t* last, void* wholock){
-    wholock = wholock;
-    //printf("Thread with ctx: %p LOCK\n", wholock);
-    pthread_mutex_lock(&wl_mutex);
-    //printf("Thread with ctx: %p ACQUIRES\n", wholock);
-    if(worklist_last == NULL){
-        worklist_last = worklist = last;
-    } else if (!slist_contains(last->v_index)){
-        last->prev = worklist_last;
-        worklist_last->next = last;
-        worklist_last = last;
-    }
-    pthread_mutex_unlock(&wl_mutex);
-    //printf("Thread with ctx: %p UNLOCK\n", wholock);
+void bitset_megaop(unsigned int vertex_index);
+void spu_bitset_megaop(unsigned int vertex_index);
+#ifdef USE_CELL
+void (*bitset_megaop_ptr)(unsigned int) = &spu_bitset_megaop;
+#else
+void (*bitset_megaop_ptr)(unsigned int) = &bitset_megaop;
+#endif
 
-}
-
-
-int slist_pop_first(){
-    //printf("Thread with ctx: %p LOCK\n", wholock);
-    pthread_mutex_lock(&wl_mutex);
-
-    //printf("Thread with ctx: %p ACQUIRES\n", wholock);
-    if(worklist == NULL){
-        pthread_mutex_unlock(&wl_mutex);
-        //printf("Thread with ctx: %p UNLOCK\n", wholock);
-        //printf("nothing to pop\n");
-        return -1; // Nothing to see here
-    }
-    int ret = worklist->v_index;
-    if(worklist == worklist_last || worklist->next == NULL){ //Only 1 element
-        //free(worklist);
-        worklist = worklist_last = NULL;
-        pthread_mutex_unlock(&wl_mutex);
-        //printf("Thread with ctx: %p UNLOCK\n", wholock);
-        //printf("Popped %d from worklist\n", ret);
-        return ret;
-    }
-    //slist_t* tmp = worklist;
-    worklist = worklist->next;
-    worklist->prev = NULL;
-//    free(tmp);
-    pthread_mutex_unlock(&wl_mutex);
-    //printf("Thread with ctx: %p UNLOCK\n", wholock);
-    //printf("Popped %d from worklist\n", ret);
-    return ret;
-}
-
-void slist_print_worklist(){
-    slist_t* tmp = worklist;
-    printf(" { ");
-    while(tmp != NULL){
-        printf("%d ", tmp->v_index);
-        tmp = tmp->next;
-    }
-    printf("}\n");
-}
-
-/*
-void test_list(){
-    for(int i = 0; i < 10; ++i){
-        slist_insert_last(slist_create_node(i));
-    }
-    printf("10 elems inserted\n");
-    slist_print_worklist();
-    for(int i = 0; i < 4; ++i){
-        slist_pop_first();
-    }
-    printf("4 elems removed\n");
-    slist_print_worklist();
-    for(int i = 0; i < 7; ++i){
-        slist_pop_first();
-    }
-    printf("7(11) elems removed\n");
-    slist_print_worklist();
-}*/
-
-static
-double sec(void){
+static double sec(void){
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (double) tv.tv_sec + (double)tv.tv_usec / 1000000;
 }
 
-
-void test_abi(arg_t* data){
-    mail_t mail;
-    mail_t mail_rec;
-
-    mail.uint = 0;
-    mail.str.vertex_done = 1;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-
-    printf("PPU vertex_done: %u\tuint: %u\t:\n", mail_rec.str.vertex_done, mail_rec.uint);
-
-    mail.uint = 0;
-    mail.str.requeue_vertex = 1;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-	spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-    printf("PPU requeue_vertex: %u\n", mail_rec.str.requeue_vertex);
-
-    mail.uint = 0;
-    mail.str.get_next_vertex = 1;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-    printf("PPU get_next_vertex: %u\n", mail_rec.str.get_next_vertex);
-
-    mail.uint = 0;
-    mail.str.complete_execution = 1;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-    printf("PPU complete_execution: %u\n", mail.str.complete_execution);
-
-    mail.uint = 0;
-    mail.str.start_execution = 1;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-    printf("PPU start_execution: %u\n", mail.str.start_execution);
-
-    mail.uint = 0;
-    mail.str.vertex_number = 134217727;
-    mail_rec.uint = 0;
-	spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-
-    printf("PPU vertex_number: %u\n", mail.str.vertex_number);
-}
-
 inline
 unsigned int pad_length(unsigned int input){
-    if(input<=1)
+/*    if(input<=1)
         return 1;
     if(input<=2)
         return 2;
@@ -259,7 +75,7 @@ unsigned int pad_length(unsigned int input){
         return 8;
     if(input<=16)
         return 16;
-
+*/
     unsigned int mod = input % 16;
     if(mod == 0){
         return input;
@@ -268,328 +84,626 @@ unsigned int pad_length(unsigned int input){
     }
 }
 
+Vertex* new_vertex(int i){
+	Vertex* v = malloc(sizeof(Vertex));
+	v->index = i;
+	v->listed = false;
+	v->pred_list = create_node(NULL); //First element = NULL
+	v->succ_list = create_node(NULL); //First element = NULL
 
-void* work(void *arg)
+    pthread_mutex_init(&v->mutex, NULL);
+    pthread_cond_init(&v->cond, NULL);
+	return v;
+}
+
+void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
+    unsigned int acquired_locks = 0;
+    unsigned int needed_locks = 1; // We know of Vertex* u.
+    unsigned int saved_locks = 0;
+    list_t* tmp_list;
+    Vertex* v;
+
+    tmp_list = succ_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        ++needed_locks;
+	}
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        ++needed_locks;
+	}
+    pthread_mutex_t mutexes[needed_locks];
+    pthread_cond_t conds[needed_locks];
+    mutexes[0] = u->mutex;
+    conds[0] = u->cond;
+    ++saved_locks;
+    
+
+    tmp_list = succ_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            mutexes[saved_locks] = v->mutex;
+            conds[saved_locks] = v->cond;
+            ++saved_locks;
+        }
+	}
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            mutexes[saved_locks] = v->mutex;
+            conds[saved_locks] = v->cond;
+            ++saved_locks;
+        }
+	}
+
+    // Acquire all or no locks.
+    while(1){
+        //printf("while(1)\n");
+        acquired_locks = 0;
+        for(unsigned int i = 0; i < needed_locks; ++i){
+            if(pthread_mutex_trylock(&mutexes[i])){
+                ++acquired_locks;
+                if(acquired_locks == needed_locks){
+                    //printf("Acquired all locks.\n");
+                    return;
+                }
+            } else {
+                //printf("Failed to acquire lock.\n");
+                for(unsigned int j = 0; j < acquired_locks; ++j){
+                    //printf("Freeing a lock.\n");
+                    pthread_mutex_unlock(&mutexes[j]);
+                    pthread_cond_signal(&conds[j]);
+                }
+                acquired_locks = 0;
+                //pthread_cond_wait(&conds[i], &mutexes[i]);
+                break; // Break out of for-loop.
+            }
+        }
+    }
+}
+
+
+void unlock_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
+    Vertex* v;
+    list_t* tmp_list = succ_list;
+
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            pthread_mutex_unlock(&v->mutex);
+            pthread_cond_signal(&v->cond);
+        }
+	}
+    //printf("Unlocked succ_list.\n");
+    tmp_list = pred_list;
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        v = tmp_list->data;
+        if(v != NULL){
+            pthread_mutex_unlock(&v->mutex);
+            pthread_cond_signal(&v->cond);
+        }
+	}
+    //printf("Unlocked pred_list.\n");
+    pthread_mutex_unlock(&u->mutex);
+    pthread_cond_signal(&u->cond);
+    //printf("Unlocked vertex.\n");
+}
+
+unsigned int* bitset_copy(unsigned int* bs){
+    unsigned int* new_bs = calloc(bitset_subsets, sizeof(unsigned int));
+    //for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+    for(unsigned int i = 0; i < bitset_subsets; ++i) {
+        new_bs[i] = bs[i];
+    }
+    return new_bs;
+}
+
+
+bool bitset_equals(unsigned int* bs1, unsigned int* bs2){
+    //for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+    for(unsigned int i = 0; i < bitset_subsets; ++i) {
+        if(bs1[i] != bs2[i]){
+            return false;
+        }
+    }
+	return true;
+}
+
+void bitset_or(unsigned int* bs1, unsigned int* bs2){
+    //for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+    for(unsigned int i = 0; i < bitset_subsets; ++i) {
+        bs1[i] |= bs2[i];
+    }
+}
+
+
+void bitset_and_not(unsigned int* bs1, unsigned int* bs2){
+    //for(unsigned int i = 0; i < (sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1)); ++i){
+    for(unsigned int i = 0; i < bitset_subsets; ++i) {
+        unsigned int tmp = bs1[i] & bs2[i];
+        tmp = ~tmp;
+        bs1[i] = tmp & bs1[i];
+    }
+}
+
+
+void bitset_set_bit(unsigned int* arr, unsigned int bit){
+    unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
+    unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
+    //printf("bit: %d\tbit_offset: %d \tbit_local_index: %d\n",bit,bit_offset,bit_local_index);
+    arr[bit_offset] |= (1 << bit_local_index);
+}
+
+
+bool bitset_get_bit(unsigned int* arr, unsigned int bit){
+    unsigned int bit_offset = (bit / (sizeof(unsigned int) * 8));
+    unsigned int bit_local_index = (unsigned int) (bit % (sizeof(unsigned int) * 8));
+    return (arr[bit_offset]) & (1 << bit_local_index);
+}
+
+
+void bitset_megaop(unsigned int vertex_index){
+    unsigned int tmp = vertex_index*bitset_subsets;
+    for(unsigned int i = 0; i < bitset_subsets; ++i) {
+        in[tmp + i]  = out[tmp + i];
+		in[tmp + i]  = in[tmp + i] & (~(in[tmp + i] & def[tmp + i]));
+		in[tmp + i] |= use[tmp + i];
+    }
+}
+
+void computeIn(Vertex* u, list_t* worklist){
+	Vertex* v;
+    acquire_locks(u, u->succ_list, u->pred_list);
+
+	list_t* tmp_list = u->succ_list;
+	do {
+        tmp_list = tmp_list->next;
+		v = tmp_list->data;
+        if(v != NULL){
+		    bitset_or(&(out[u->index*bitset_subsets]), &(in[v->index*bitset_subsets]));
+        }
+	} while(tmp_list->next != tmp_list);
+
+	unsigned int* old = bitset_copy(&(in[u->index*bitset_subsets]));
+	bitset_megaop_ptr(u->index);
+
+
+/*  THIS CODE DOES NOT WORK
+	// TODO: No need to set to zero if the gpu just starts with  in = (0 | out) = out.. instead
+	memset( &(in[u->index*bitset_subsets]), '0', alloc_size);
+	bitset_or( &(in[u->index*bitset_subsets]), &(out[u->index*bitset_subsets]));
+	bitset_and_not( &(in[u->index*bitset_subsets]), &(def[u->index*bitset_subsets]));
+	bitset_or( &(in[u->index*bitset_subsets]), &(use[u->index*bitset_subsets]));
+*/
+	if(!bitset_equals( &(in[u->index*bitset_subsets]), old)){
+		tmp_list = u->pred_list;
+		do{
+            tmp_list = tmp_list->next;
+			v = tmp_list->data;
+			if(v != NULL){
+                if(!v->listed){
+				    add_last(worklist, create_node(v));
+				    v->listed = true;
+                }
+			}
+		}while(tmp_list->next != tmp_list);
+	}
+    free(old);
+    unlock_locks(u, u->succ_list, u->pred_list);
+}
+
+void print_vertex(Vertex* v){
+	int i;
+
+	printf("use[%d] = { ", v->index);
+	for (i = 0; i < nsym; ++i){
+	if (bitset_get_bit( &(use[v->index*bitset_subsets]), i) ) {//bitset_get_bit(v->use, i)){
+			printf("%d ", i);
+		}
+	}
+	printf("}\n");
+	printf("def[%d] = { ", v->index);
+
+	for (i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(def[v->index*bitset_subsets]), i) ) {
+//		if (bitset_get_bit(v->def, i)){
+			printf("%d ", i);
+		}
+	}
+	printf("}\n\n");
+	printf("in[%d] = { ", v->index);
+
+	for (i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(in[v->index*bitset_subsets]), i) ) {
+//		if (bitset_get_bit(v->in, i)){
+			printf("%d ", i);
+		}
+	}
+	printf("}\n");
+	printf("out[%d] = { ", v->index);
+
+	for (i = 0; i < nsym; ++i){
+		if ( bitset_get_bit( &(out[v->index*bitset_subsets]), i) ) {
+//		if (bitset_get_bit(v->out, i)){
+			printf("%d ", i);
+		}
+	}
+	printf("}\n\n");
+}
+
+void connect(Vertex* pred, Vertex* succ){
+	add_last(pred->succ_list, create_node(succ));
+	add_last(succ->pred_list, create_node(pred));
+}
+
+void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
+    //printf("in generateCFG\n");
+	int i = 2;
+	int j;
+	int k;
+	int s;
+    Vertex* tmp_v;
+    Vertex* tmp_s;
+	list_t* tmp_list = vertex_list->next;
+    list_t* tmp_list_s;
+
+    tmp_v = tmp_list->next->data;
+	connect(tmp_list->data, tmp_v);
+
+    tmp_v = tmp_list->next->next->data;
+	connect(tmp_list->data, tmp_v);
+	tmp_list = tmp_list->next;
+
+	while(tmp_list->next != tmp_list){
+		tmp_list = tmp_list->next;
+        tmp_v = tmp_list->data; //vertex[i]
+		if(print_input){
+			printf("[%d] succ = {", i);
+		}
+
+        s = nextRand(r) % maxsucc +1;
+		for (j = 0; j < s; ++j) {
+			k = abs(nextRand(r)) % nvertex;
+			if(print_input){
+				printf(" %d", k);
+			}
+            tmp_list_s = vertex_list->next;
+            tmp_s = tmp_list_s->data;
+            while(tmp_s->index != k){
+                tmp_list_s = tmp_list_s->next;
+                tmp_s = tmp_list_s->data;
+            }
+
+			connect(tmp_v, tmp_s);
+		}
+		if(print_input){
+			printf("}\n");
+		}
+		++i;
+	}
+}
+
+
+void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
+    //printf("in generateUseDef\n");
+	int j;
+	int sym;
+	list_t* tmp_list = vertex_list;
+	Vertex* v;
+
+	do{
+        tmp_list = tmp_list->next;
+		v = tmp_list->data;
+
+		if(print_input){
+			printf("[%d] usedef = {", v->index);
+		}
+		for (j = 0; j < nactive; ++j) {
+			sym = abs(nextRand(r)) % nsym;
+			if (j % 4 != 0) {
+printf("bitset_get_bit(v->def, %d) = %d\n", sym, bitset_get_bit( &(def[v->index*bitset_subsets]), sym));
+				if(!bitset_get_bit( &(def[v->index*bitset_subsets]), sym)){//!bitset_get_bit(v->def, sym)){
+					if(print_input){
+						printf(" u %d", sym);
+					}
+printf("setting %d in use[%d]\n", sym, v->index);
+					bitset_set_bit( &(use[v->index*bitset_subsets]), sym);//bitset_set_bit(v->use, sym, true);
+				}
+			}else{
+printf("bitset_get_bit(v->use, %d) = %d\n", sym, bitset_get_bit(&(use[v->index*bitset_subsets]), sym));
+				if(!bitset_get_bit( &(use[v->index*bitset_subsets]), sym)){//!bitset_get_bit(v->use, sym)){
+					if(print_input){
+						printf(" d %d", sym);
+					}
+printf("setting %d in def[%d]\n", sym, v->index);
+					bitset_set_bit( &(def[v->index*bitset_subsets]), sym);//bitset_set_bit(v->def, sym, true);
+				}
+			}
+		}
+		if(print_input){
+			printf("}\n");
+		}
+	}while(tmp_list->next != tmp_list);
+}
+
+typedef struct thread_struct {
+    unsigned int index;
+    list_t* worklist;
+} thread_struct;
+
+void* thread_func(void* ts){
+    list_t* worklist = ((thread_struct*) ts)->worklist;
+    unsigned int index = ((thread_struct*) ts)->index;
+	printf("Thread[%u] in thread_func()\n", index);
+	Vertex* u;
+    unsigned int work_counter = 0;
+	while(worklist->next != worklist){ // while (!worklist.isEmpty())
+        u = remove_node(worklist->next);
+        //printf("u->index = %d\n", u->index);
+printf("PPU[%u] index: %u  bitset_subsets: %u  offset: %u\n", index, u->index, bitset_subsets, u->index*bitset_subsets);
+printf("PPU[%u]\t&use: %p\n\t&def: %p\n\t&out: %p\n\t&in:  %p\n", index, (void*)&(use[u->index]), (void*)&(def[u->index]), (void*)&(out[u->index]), (void*)&(in[u->index]));
+printf("Iteration #%d has\tuse(%p)={", work_counter, (void*)&(use[u->index*bitset_subsets]));
+	for (int i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(use[u->index*bitset_subsets]), i) ) {
+			printf("%d ", i);
+		}
+	}
+printf("}\n");
+printf("Iteration #%d has\tdef(%p)={", work_counter, (void*)&(def[u->index*bitset_subsets]));
+	for (int i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(def[u->index*bitset_subsets]), i) ) {
+			printf("%d ", i);
+		}
+	}
+printf("}\n");
+printf("Iteration #%d has\tout(%p)={", work_counter, (void*)&(out[u->index*bitset_subsets]));
+	for (int i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(out[u->index*bitset_subsets]), i) ) {
+			printf("%d ", i);
+		}
+	}
+printf("}\n");
+printf("Iteration #%d has\tin (%p)={", work_counter, (void*)&(in[u->index*bitset_subsets]));
+	for (int i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(in[u->index*bitset_subsets]), i) ) {
+			printf("%d ", i);
+		}
+	}
+printf("}\n");
+		u->listed = false;
+		computeIn(u, worklist);
+
+printf("Iteration #%d returned\tin={", work_counter);
+	for (int i = 0; i < nsym; ++i){
+	if ( bitset_get_bit( &(in[u->index*bitset_subsets]), i) ) {
+			printf("%d ", i);
+		}
+	}
+printf("}\n");
+
+        work_counter++;
+	}
+    printf("Thread[%u] worked %u iterations.\n", index, work_counter);
+	spu_quit();
+    return NULL;
+}
+
+void* spu_init(void *arg)
 {
 	arg_t* data = arg;
 	unsigned int entry = SPE_DEFAULT_ENTRY;
-
-    printf("PPU-%d, Starting SPU-%d context.\n",data->spu_num,data->spu_num);
+    printf("PPU thread #%d, Starting SPU[%d] context.\n", data->spu_num, data->spu_num);
 	if (spe_context_run(data->ctx, &entry, 0, data->arg, NULL, NULL) < 0) {
 		perror("Failed running context");
 		exit (1);
 	}
+	printf("PPU thread #%d sees that SPU[%u] has terminated.\n", data->spu_num, data->spu_num);
 
-	//printf("PPU pthread sees SPU has terminated.\n");
 
 	pthread_exit(NULL);  
 }
 
-
-int acquire_next_dummy(int wholock){
-    int ret = slist_pop_first();
-    printf("acquire_next_dummy%d: ret = %d\n", wholock, ret);
-    return ret;
+void spu_quit(){
+	printf("spu_quit()\n");
+	ppu_send_mail_t send;
+	send.vertex_index = UINT_MAX;
+	if(	pthread_mutex_trylock(&spu_quit_mutex)){
+		for(int i = 0; i < nspu; ++i){
+    		spe_in_mbox_write(data[i].ctx, &send.vertex_index, 1, 1);
+		}
+	}
 }
 
+void spu_bitset_megaop(unsigned int vertex_index){
+	ppu_send_mail_t send;
+	spu_send_mail_t recv;
 
-bool acquire_locks(int v_index){
-    unsigned int needed_locks = 1;
-    unsigned int saved_locks = 0;
-    bool failed = false;
+	recv.op_completed = UINT_MAX;
 
-    needed_locks += vertices[v_index].pred_count + vertices[v_index].succ_count;
-    int local_mutexes[needed_locks];
+	// Select which SPU to use.
+	pthread_mutex_lock(&spu_round_robin_mutex);
+	spe_context_ptr_t context = data[spu_round_robin++].ctx;
+	if(spu_round_robin >= nspu){
+		spu_round_robin = 0;
+	}
+	pthread_mutex_unlock(&spu_round_robin_mutex);
+	
+	printf("spu_bitset_megaop() sending msg #%u\n", vertex_index);
+	send.vertex_index = vertex_index;
+    spe_in_mbox_write(context, &send.vertex_index, 1, 1);
 
-    if( pthread_mutex_trylock(&mutexes[v_index]) ){
-        local_mutexes[0] = v_index;
-        ++saved_locks;
-    } else {
-        failed = true;
-    }
-    for(unsigned int i = 0; (i < vertices[v_index].succ_count) && !failed; ++i){
-        if(pthread_mutex_trylock(&mutexes[vertices[v_index].succ_list[i]])){
-            local_mutexes[saved_locks++] = vertices[v_index].succ_list[i];
-        } else {
-            failed = true;
+	// Block until bitset has been completed
+    while (recv.op_completed != vertex_index) {
+		printf("spu_bitset_megaop() waiting for message..\n");
+		spe_out_intr_mbox_read(context, &recv.op_completed, 1, SPE_MBOX_ALL_BLOCKING);
+		printf("spu_bitset_megaop() received message #%u\n", recv.op_completed);
 
-        }
-    }
-
-    for(unsigned int i = 0; (i < vertices[v_index].pred_count) && !failed; ++i){
-        if(pthread_mutex_trylock(&mutexes[vertices[v_index].pred_list[i]])){
-            local_mutexes[saved_locks++] = vertices[v_index].pred_list[i];
-        } else {
-            failed = true;
-        }
-    }
-
-    if(failed){
-        for(unsigned int j = 0; (j < saved_locks); ++j){
-            pthread_mutex_unlock(&mutexes[local_mutexes[j]]);
-        }
-        return false;
-    } else {
-        /*printf("acquire locks { ");
-        for(unsigned int i = 0; i < saved_locks; ++i){
-            printf("%d ", local_mutexes[i]);
-        }
-        printf("}\n");*/
-        pthread_mutex_lock(&acquired_locks_mutex);
-        acquired_locks_ctr += saved_locks;
-        //printf("acquire_locks(%d): acquired_locks_ctr=%d\t saved_locks=%d needed_locks=%d \n", v_index, acquired_locks_ctr,saved_locks,needed_locks);
-        pthread_mutex_unlock(&acquired_locks_mutex);
-        return true;
-    }
+	}
 }
 
+void liveness(list_t* vertex_list, int nthread){
+    printf("liveness()\n");
+	Vertex* v;
 
-/*
- * -1 is returned if no next vertex can be returned (ie we're done = empty worklist & no locks).
- */
-int acquire_next(int wholocked){
-    int ret;
+    int status[nthread];
+ 	pthread_t thread[nthread];
+	list_t* worklist[nthread];
+    int worksplit[nthread];
 
-    //printf("PPU acquire_next\n");
-    while(acquired_locks_ctr > 0 || worklist != NULL){
-        //printf("\n");
-        TRACE_ACQUIRE_NEXT slist_print_worklist();
-        ret = slist_pop_first();
-        TRACE_ACQUIRE_NEXT printf("PPU-%d acquired_locks_ctr=%u   ret=%d   worklist=",wholocked, acquired_locks_ctr, ret);
-        TRACE_ACQUIRE_NEXT slist_print_worklist();
-        bool aq;
-        if (ret != -1 && (aq = acquire_locks(ret))){ //Non empty list && lockable
-            TRACE_ACQUIRE_NEXT printf("\t %s\n", aq ? "ACQUIRED" : "DENIED");
-            //printf("acquire_next(): return ret!\n");
-            vertices[ret].listed = false;
-            return ret;
-        } else if (ret >= 0) {
-            slist_insert_last(slist_create_node(ret), NULL);
-            //printf("acquire_next(): slist_insert_last!\n");
-        } else {
-            //return -1;
-            //printf("acquire_next(): whoops!\n");
-        }
+	double begin;
+	double end;
+
+	begin = sec();
+
+    for(int i = 0; i < nthread; ++i){
+        worksplit[i] = 0;
+        worklist[i] = create_node(NULL);
     }
-    return -1;
+
+
+	printf("Splitting worklist..\n");
+	list_t* tmp_list = vertex_list;//->next;
+    int counter = 0;
+	while(tmp_list->next != tmp_list){
+        tmp_list = tmp_list->next;
+		v = tmp_list->data;
+		v->listed = true;
+        int index = (counter++) % nthread;
+        worksplit[index]++;
+		add_last(worklist[index], create_node(v));
+	}
+
+	printf("Allocing thread_structs\n");
+    for(int i = 0; i < nthread; ++i){
+        thread_struct* ts = malloc(sizeof(thread_struct));
+        ts->index = i;
+        //printf("i = %d\n", i);
+        ts->worklist = worklist[i];
+        status[i] = pthread_create(&thread[i], NULL, thread_func, ts);
+    }
+
+    for(int i = 0; i < nthread; ++i){
+        pthread_join(thread[i], NULL);
+    }
+	end = sec();
+    printf("c runtime = %f s\n", (end - begin));
+
 }
 
+int main(int ac, char** av){
 
-void free_locks(int v_index){
-#ifdef THOROUGH_FREE_LOCKS
-    if(pthread_mutex_trylock(&mutexes[v_index])){
-        printf("ERROR! An unlocked (vertex)lock was free'd\n");
-        exit(0);
-    }
-#endif
-    //printf("Free locks: { ");
-    for(unsigned int i = 0;i < vertices[v_index].succ_count; ++i){
-        //printf("%d ", vertices[v_index].succ_list[i]);
-#ifdef THOROUGH_FREE_LOCKS
-        if (pthread_mutex_trylock(&mutexes[vertices[v_index].succ_list[i]])){
-            printf("ERROR! An unlocked (succ_list)lock was free'd\n");
-            exit(0);
-        }
-#endif
-        pthread_mutex_unlock(&mutexes[vertices[v_index].succ_list[i]]);
-    }
+	int	i;
+	int	maxsucc;
+	int	nactive;
+	int	nthread;
+	bool print_output; 
+	list_t* vertex;
+	Random* r = new_random();
+    list_t* tmp_list;
 
-    for(unsigned int i = 0;i < vertices[v_index].pred_count; ++i){
-        //printf("%d ", vertices[v_index].pred_list[i]);
-#ifdef THOROUGH_FREE_LOCKS
-        if (pthread_mutex_trylock(&mutexes[vertices[v_index].pred_list[i]])){
-            printf("ERROR! An unlocked (pred_list)lock was free'd\n");
-            exit(0);
-        }
-#endif
-        pthread_mutex_unlock(&mutexes[vertices[v_index].pred_list[i]]);
-    }
-    pthread_mutex_unlock(&mutexes[v_index]);
-    //printf("%d }\n", v_index);
-    pthread_mutex_lock(&acquired_locks_mutex);
-    acquired_locks_ctr -= 1 + vertices[v_index].pred_count + vertices[v_index].succ_count;
-    //printf("free_locks(%d): acquired_locks_ctr=%d\n", v_index, acquired_locks_ctr);
-    pthread_mutex_unlock(&acquired_locks_mutex);
-    //printf("Unlocked vertex.\n");
-}
+	setSeed(r, 1);
+	vertex = create_node(NULL); //First element = NULL
 
-void print_mail_t(mail_t mail){
-    //printf("\tmail_t, uint: %u\n", mail.uint);
-    printf("\tvertex_done: %u\n", mail.str.vertex_done);
-    printf("\trequeue_vertex: %u\n", mail.str.requeue_vertex);
-    printf("\tget_next_vertex: %u\n", mail.str.get_next_vertex);
-    printf("\tcomplete_execution: %u\n", mail.str.complete_execution);
-    printf("\tstart_execution: %u\n", mail.str.start_execution);
-    printf("\tvertex_number: %u\n", mail.str.vertex_number);
-}
-
-void* spu_manager(void *arg){
-    arg_t* data = arg;
-    int tmp_vertex;
-
-    mail_t mail;
-    mail_t mail_rec;
-
-    // Send first message containing both vertex_number and start_execution
-    mail.uint = 0;
-    mail.str.start_execution = 1;
-
-
-    tmp_vertex = acquire_next(data->spu_num);
-    spu_work_next[data->spu_num][spu_work_ctr[data->spu_num][0]] = tmp_vertex;
-    spu_work_ctr[data->spu_num][0] += 1;
-
-    if(tmp_vertex < 0){
-        mail.str.complete_execution = 1;
-    } else {
-        mail.str.get_next_vertex = 1;
-        mail.str.vertex_number = tmp_vertex;
-        //TRACE_SPU_MANAGER print_vertex_debug(&vertices[tmp_vertex], data->spu_num);
-    }
-
-    TRACE_SPU_MANAGER printf("PPU-%d first mbox write.\n", data->spu_num);
-    spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    TRACE_SPU_MANAGER printf("PPU-%d after first mbox write.\n", data->spu_num);
-
-
-    while(1){
-
-
-        TRACE_SPU_MANAGER printf("PPU-%d fst loop read.\n", data->spu_num);
-        spe_out_intr_mbox_read(data->ctx, &mail_rec.uint, 1, SPE_MBOX_ALL_BLOCKING);
-        //printf("PPU recieved:\n");
-        //print_mail_t(mail_rec);
-        TRACE_SPU_MANAGER printf("PPU-%d after fst loop read.\n", data->spu_num);
-
-        if(mail_rec.str.vertex_done == 1){
-            TRACE_SPU_MANAGER printf("PPU-%d mail_rec.str.vertex_done == 1\n", data->spu_num);
-            spu_work_returned[data->spu_num][spu_work_ctr[data->spu_num][1]] = mail_rec.str.vertex_number;
-            spu_work_ctr[data->spu_num][1] +=1;
-            free_locks(mail_rec.str.vertex_number);
-            ///print_spu_work();
-        }else if(mail_rec.str.requeue_vertex == 1){
-            TRACE_SPU_MANAGER printf("PPU-%d mail_rec.str.requeue_vertex-%d == 1\n", data->spu_num, mail_rec.str.vertex_number);
-            vertices[mail_rec.str.vertex_number].listed = true;
-            slist_insert_last(slist_create_node(mail_rec.str.vertex_number),(void*)&data->ctx);
-            continue;
-        }
-        if(mail_rec.str.get_next_vertex == 1){
-            TRACE_SPU_MANAGER printf("PPU-%d mail_rec.str.get_next_vertex == 1\n", data->spu_num);
-            tmp_vertex = acquire_next(data->spu_num);
-            TRACE_SPU_MANAGER printf("after aq next\n");
-            //slist_print_worklist();
-        }
-        if(tmp_vertex < 0){//|| mail_rec.str.complete_execution){
-            TRACE_SPU_MANAGER printf("PPU-%d tmp_vertex < 0\n", data->spu_num);
-            mail.uint = 0;
-            break;
-        } else {
-            //TRACE_SPU_MANAGER print_vertex_debug(&vertices[tmp_vertex], data->spu_num);
-            mail.str.get_next_vertex = 1;
-            mail.str.vertex_number = tmp_vertex;
-            spu_work_next[data->spu_num][spu_work_ctr[data->spu_num][0]] = tmp_vertex;
-            spu_work_ctr[data->spu_num][0] +=1;
-            //print_spu_work();
-        }
-        TRACE_SPU_MANAGER printf("PPU-%d end of loop, writing mbox.\n", data->spu_num);
-
-        spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-
-        TRACE_SPU_MANAGER printf("PPU-%d end of loop, after writing mbox.\n", data->spu_num);
-
-        mail.uint = 0;
-    }
-    mail.str.complete_execution = 1;
-
-    //printf("PPU-%d loop complete! tell spu to complete execution.\n", data->spu_num);
-    
-    spe_in_mbox_write(data->ctx, &mail.uint, 1, 1);
-    return NULL;
-}
-
-
-int main(int argc, char** av) 
-{   
-    double  begin;
-	double  end;
-	int     errnum;
-	int     maxsucc, nactive, nspu, nvertex, nsym;
-    bool    print_input, print_output;
-
-    if (argc >= 8){
+    if (ac == 9){
 	    sscanf(av[1], "%d", &nsym);
 	    sscanf(av[2], "%d", &nvertex);
 	    sscanf(av[3], "%d", &maxsucc);
 	    sscanf(av[4], "%d", &nactive);
-	    sscanf(av[5], "%d", &nspu);
-        if(nspu < 1 || nspu > P){
-            nspu = P;
+	    sscanf(av[5], "%d", &nthread);
+	    sscanf(av[6], "%d", &nspu);
+        if(nspu < 1 || nspu > 6){
+            nspu = 6;
         }
 	    char* tmp_string = "";
-        tmp_string = av[6];
+        tmp_string = av[7];
 	    if(tolower(tmp_string[0]) == 't'){
 		    print_output = true;
 	    }else{
 		    print_output = false;
 	    }
 
-        tmp_string = av[7];
+        tmp_string = av[8];
 	    if(tolower(tmp_string[0]) == 't'){
 		    print_input = true;
 	    }else{
 		    print_input = false;
 	    }
     } else {
-        nsym = 300;
-        nvertex = 30;
+	    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads nspu print_output print_input).\nAssuming sane defaults.\n");
+        nsym = 100;
+        nvertex = 8;
         maxsucc = 4;
         nactive = 10;
+        nthread = 1;
         nspu = 6;
         print_output = true;
 	    print_input = false;
     }
+	progname = av[0];
+    alloc_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
+	bitset_subsets = sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1);
 
-    arg_t   data[nspu];
-    param_t param[nspu] A16;
-	argc 		= argc; 	// to silence gcc...
-	progname	= av[0];
-    bitset_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
-
-	/*printf("nsym   = %zu\n", nsym);
+	printf("nsym   = %zu\n", nsym);
 	printf("nvertex   = %zu\n", nvertex);
 	printf("maxsucc   = %zu\n", maxsucc);
 	printf("nactive   = %zu\n", nactive);
-	printf("nspu   = %zu\n", nspu);
-	printf("param_t size   = %zu\n", sizeof(param_t));
-	printf("arg_t size  = %zu\n", sizeof(arg_t));
-    printf("bitset_size = %u\n", bitset_size);
-    printf("bitset_size (padded) = %u\n", pad_length( bitset_size) );
-    printf("sizeof(int): %db\n", sizeof(int));
-    printf("sizeof(void*): %db\n", sizeof(void*));
-    printf("sizeof(char): %db\n", sizeof(char));
-    printf("sizeof(vertex_t): %db\n", sizeof(vertex_t));*/
+	printf("alloc_size   = %zu\n", pad_length(alloc_size));
 
-    pthread_mutex_init(&wl_mutex, NULL);
-    pthread_mutex_init(&acquired_locks_mutex, NULL);
-    mutexes = malloc(sizeof(pthread_mutex_t)*nvertex);
-    for(int i = 0; i < nvertex; ++i){
-        pthread_mutex_init(&mutexes[i], NULL);
-    }
-    vertices = create_vertices(nsym, nvertex, maxsucc, nactive, print_input);
+	//
+	// Generate CFG
+    tmp_list = vertex;
+	for (i = 0; i < nvertex; ++i){
+        insert_after(tmp_list, create_node(new_vertex(i)));
+		tmp_list = tmp_list->next;
+	}
+	void* tmp;
+    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+	in = tmp;
+    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+	out = tmp;
+    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+	use = tmp;
+    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+	def = tmp;
+    if(in == NULL || out == NULL || use == NULL || def == NULL){
+        printf("posix_memalign returned null\n");
+		exit(1);
+	}
+    memset(in,  0, alloc_size * nvertex);
+    memset(out, 0, alloc_size * nvertex);
+    memset(use, 0, alloc_size * nvertex);
+    memset(def, 0, alloc_size * nvertex);
 
-	begin = sec();
+	printf("Generating CFG..\n");
+	generateCFG(vertex, maxsucc, r);
+	printf("Generating UseDef\n");
+	generateUseDef(vertex, nsym, nactive, r);
+	printf("Creating SPU context\n");
 
-    for(int i = 0; i < nvertex; ++i){
-        vertices[i].listed = true;
-        slist_insert_last(slist_create_node(i),(void*)&data->ctx);
-    }
+	//
+	// Create SPU context and SPU-managing threads
+#ifdef USE_CELL
+    param_t param[nspu] A16;
+	pthread_mutex_init(&spu_round_robin_mutex, NULL);
+	pthread_mutex_init(&spu_quit_mutex, NULL);
 
 	for (int i = 0; i < nspu; ++i) {
+		printf("Setting SPU params\n");
 		data[i].spu_num = param[i].proc = i;
 		param[i].nvertex = nvertex;
-        param[i].vertices = vertices;
-        param[i].nsym = nsym;
-        param[i].bitset_size = pad_length( bitset_size );
+        param[i].bs_in_addr  = in;
+        param[i].bs_out_addr = out;
+        param[i].bs_use_addr = use;
+        param[i].bs_def_addr = def;
+        param[i].bitset_size = pad_length( alloc_size );
+		param[i].bitset_subsets = bitset_subsets;
 
 		if ((data[i].ctx = spe_context_create (0, NULL)) == NULL) {
 			perror ("Failed creating context");
@@ -603,60 +717,30 @@ int main(int argc, char** av)
 
 		data[i].arg = &param[i];
 
-		if ( pthread_create(&data[i].pthread, NULL, work, &data[i]) ) {
+		if (pthread_create(&data[i].pthread, NULL, spu_init, &data[i]) ) {
 			perror ("Failed creating thread");
 			exit(1);
 		}
-
-		if ( pthread_create(&data[i].manager_pthread, NULL, spu_manager, &data[i]) ) {
-			perror ("Failed creating manager thread");
-			exit(1);
-		} 
+unsigned nbr = 1337;
+spe_in_mbox_write(data[i].ctx, &(nbr), 1, 1);//DELETEME
 	}
+ 
+#endif
+	//
+	// Start liveness analysis
+	liveness(vertex, nthread);
 
+	//
+	// Print results
+	if(print_output){
+        tmp_list = vertex->next;
 
-	for (int i = 0; i < nspu; ++i) {
-		errnum = pthread_join(data[i].pthread, NULL);
-		//printf("joining with PPU pthread %zu...\n", i);
-		if (errnum != 0)
-			syserror(errnum, "pthread_join failed");
-
-		if (spe_context_destroy (data[i].ctx) != 0) {
-			perror("Failed destroying context");
-			exit(1);
+		for (i = 0; i < nvertex; ++i){
+			print_vertex(tmp_list->data);
+			tmp_list = tmp_list->next;
 		}
 	}
 
-
-	end = sec();
-
-    if(print_output){
-        for(int i = 0; i < nvertex; ++i){
-            print_vertex(&vertices[i]);
-        }
-    }
-
-
-	printf("%1.3lf s\n", end-begin);
-
 	return 0;
-}
-
-void print_vertex_debug(vertex_t* v, int ppu_num){
-printf("\n*** PPU-%d vertices[%d] ***\nlisted: %d\npred: %p\nsucc: %p\nin: %p\nout: %p\nuse: %p\ndef: %p\nsucc_count: %u\npred_count: %u\n", ppu_num, v->index, v->listed, (void*)v->pred_list, (void*)v->succ_list, (void*)v->in, (void*)v->out, (void*)v->use, (void*)v->def, v->succ_count, v->pred_count);
-    printf("succ_list: { ");
-    for(unsigned int i = 0; i < v->succ_count; ++i){
-        printf("%u ", v->succ_list[i]);
-    }
-    printf("}\npred_list: { ");
-    for(unsigned int i = 0; i < v->pred_count; ++i){
-        printf("%u ", v->pred_list[i]);
-    }
-    printf("}\nPPU-%d v[%d].use: { ", ppu_num, v->index);
-    for(unsigned int i = 0; i < (bitset_size/sizeof(unsigned int)); ++i){
-        printf("%u ", v->use[i]);
-    }
-    printf("}\nPPU-%d bitset_size=%u", ppu_num, bitset_size);
-    printf("\n----\n");
 }
 

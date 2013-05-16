@@ -21,14 +21,12 @@ include $(CELL_TOP)/buildutils/make.footer
 
 #CFLAGS		= -O4 -Wall -pedantic -std=c99 -DTEST
 #CFLAGS		= -O4 -Wall -pedantic -std=c99
-CFLAGS		= -maltivec -O0 -Wall -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=600 -g
+CFLAGS		+= -maltivec -O0 -Wall -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=600 -g ${XTRACFLAGS}
 
-OBJS	= driver.o error.o vertex.o list.o rand.o
+OBJS	= driver.o error.o list.o rand.o
 
 all: $(OBJS)
-#	./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NSPUS) ${PRINT_OUTPUT} ${PRINT_INPUT}# > cell_output.txt
-#	(cd ../lab4; make; ./dataflow $(NSYM) $(NVERTEX) $(MAXSUCC) $(NACTIVE) $(NSPUS) ${PRINT_OUTPUT} ${PRINT_INPUT} > c_output.txt)
-#	diff cell_output.txt ../lab4/c_output.txt > diff.txt
+
 
 clean:
 	rm -f $(PROGRAM_ppu) $(OBJS)
