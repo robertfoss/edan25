@@ -12,14 +12,15 @@
 #include "list.h"
 #include "rand.h"
 
+#define D(x)
+#define MSG(x)  x
+
 typedef struct{
 	spe_context_ptr_t	ctx;
 	pthread_t		pthread;
     unsigned short	spu_num;
 	void*			arg;
 } arg_t A16;
-
-
 
 typedef struct{
 	int index;
@@ -417,6 +418,12 @@ printf("setting %d in use[%d]\n", sym, v->index);
 					bitset_set_bit( &(use[v->index*bitset_subsets]), sym);//bitset_set_bit(v->use, sym, true);
 				}
 			}else{
+#define UNUSED(x) (void)(x)
+int idx = v->index*bitset_subsets;
+bool b = bitset_get_bit( &(use[v->index*bitset_subsets]), sym);
+UNUSED(idx);
+UNUSED(b);
+
 printf("bitset_get_bit(v->use, %d) = %d\n", sym, bitset_get_bit(&(use[v->index*bitset_subsets]), sym));
 				if(!bitset_get_bit( &(use[v->index*bitset_subsets]), sym)){//!bitset_get_bit(v->use, sym)){
 					if(print_input){
@@ -446,8 +453,8 @@ void* thread_func(void* ts){
     unsigned int work_counter = 0;
 	while(worklist->next != worklist){ // while (!worklist.isEmpty())
         u = remove_node(worklist->next);
-        //printf("u->index = %d\n", u->index);
-printf("PPU[%u] index: %u  bitset_subsets: %u  offset: %u\n", index, u->index, bitset_subsets, u->index*bitset_subsets);
+
+D(printf("PPU[%u] index: %u  bitset_subsets: %u  offset: %u\n", index, u->index, bitset_subsets, u->index*bitset_subsets);
 printf("PPU[%u]\t&use: %p\n\t&def: %p\n\t&out: %p\n\t&in:  %p\n", index, (void*)&(use[u->index]), (void*)&(def[u->index]), (void*)&(out[u->index]), (void*)&(in[u->index]));
 printf("Iteration #%d has\tuse(%p)={", work_counter, (void*)&(use[u->index*bitset_subsets]));
 	for (int i = 0; i < nsym; ++i){
@@ -476,17 +483,17 @@ printf("Iteration #%d has\tin (%p)={", work_counter, (void*)&(in[u->index*bitset
 			printf("%d ", i);
 		}
 	}
-printf("}\n");
+printf("}\n");)
 		u->listed = false;
 		computeIn(u, worklist);
 
-printf("Iteration #%d returned\tin={", work_counter);
+D(printf("Iteration #%d returned\tin={", work_counter);
 	for (int i = 0; i < nsym; ++i){
 	if ( bitset_get_bit( &(in[u->index*bitset_subsets]), i) ) {
 			printf("%d ", i);
 		}
 	}
-printf("}\n");
+printf("}\n");)
 
         work_counter++;
 	}
@@ -535,15 +542,15 @@ void spu_bitset_megaop(unsigned int vertex_index){
 	}
 	pthread_mutex_unlock(&spu_round_robin_mutex);
 	
-	printf("spu_bitset_megaop() sending msg #%u\n", vertex_index);
+	MSG(printf("spu_bitset_megaop() sending msg #%u\n", vertex_index);)
 	send.vertex_index = vertex_index;
     spe_in_mbox_write(context, &send.vertex_index, 1, 1);
 
 	// Block until bitset has been completed
     while (recv.op_completed != vertex_index) {
-		printf("spu_bitset_megaop() waiting for message..\n");
+		MSG(printf("spu_bitset_megaop() waiting for message..\n");)
 		spe_out_intr_mbox_read(context, &recv.op_completed, 1, SPE_MBOX_ALL_BLOCKING);
-		printf("spu_bitset_megaop() received message #%u\n", recv.op_completed);
+		MSG(printf("spu_bitset_megaop() received message #%u\n", recv.op_completed);)
 
 	}
 }
@@ -647,14 +654,19 @@ int main(int ac, char** av){
 	    print_input = false;
     }
 	progname = av[0];
-    alloc_size = 50*(nsym / (sizeof(unsigned int) * 8)) + 1;
-	bitset_subsets = sizeof(unsigned int) * (nsym / (sizeof(unsigned int) * 8) + 1);
+    int bits_per_uint = sizeof(unsigned int) * 8;
+    int uints_per_bitset = (unsigned int) ( ( (float)(nsym) / (float)(bits_per_uint) ) + 1);
+    alloc_size = pad_length(sizeof(unsigned int) * uints_per_bitset);
+	bitset_subsets = uints_per_bitset;
 
 	printf("nsym   = %zu\n", nsym);
 	printf("nvertex   = %zu\n", nvertex);
 	printf("maxsucc   = %zu\n", maxsucc);
 	printf("nactive   = %zu\n", nactive);
-	printf("alloc_size   = %zu\n", pad_length(alloc_size));
+	printf("bits_per_uint   = %zu\n", bits_per_uint);
+	printf("uints_per_bitset   = %zu\n", uints_per_bitset);
+	printf("alloc_size   = %zu\n", alloc_size);
+	printf("bitset_subsets   = %zu\n", bitset_subsets);
 
 	//
 	// Generate CFG
@@ -721,8 +733,6 @@ int main(int ac, char** av){
 			perror ("Failed creating thread");
 			exit(1);
 		}
-unsigned nbr = 1337;
-spe_in_mbox_write(data[i].ctx, &(nbr), 1, 1);//DELETEME
 	}
  
 #endif

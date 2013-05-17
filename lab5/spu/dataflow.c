@@ -13,19 +13,7 @@
 #include "vertex.h"
 
 
-//#define DEBUG_WORK
-#ifdef DEBUG_WORK
-#define TRACE_WORK if(1)
-#else
-#define TRACE_WORK if(0)
-#endif
-
-#define DEBUG_FETCH_BITSET
-#ifdef DEBUG_FETCH_BITSET
-#define TRACE_FETCH_BITSET if(1)
-#else
-#define TRACE_FETCH_BITSET if(0)
-#endif
+#define D(x)    x
 
 
 param_t         param A16;
@@ -74,7 +62,7 @@ void work()
 		mfc_write_tag_mask(1<<tag[0] | 1<<tag[1] | 1<<tag[2] | 1<<tag[3]);
 		mfc_read_tag_status_all();
 
-printf("SPU[%d] index: %u  bitset_subsets: %u  offset: %u\n", spu_num, inbox, bitset_subsets, offset);
+D(printf("SPU[%d] index: %u  bitset_subsets: %u  offset: %u\n", spu_num, inbox, bitset_subsets, offset);
 printf("SPU[%d]\t&use: %p\n\t&def: %p\n\t&out: %p\n\t&in:  %p\n", spu_num, (void*)param.bs_use_addr, (void*)param.bs_def_addr, (void*)param.bs_out_addr, (void*)param.bs_in_addr);
 void *tmp_ptr = (void*) (param.bs_use_addr  + offset);
 printf("SPU[%d] read\t\t&%p = use(%p)={", spu_num, (void*)use, tmp_ptr);
@@ -107,16 +95,16 @@ printf("SPU[%d] read\t\t&%p = in (%p)={", spu_num, (void*)in, tmp_ptr);
 			printf("%d ", i);
 		}
 	}
-printf("}\n");
+printf("}\n"));
 		bitset_megaop(in, out, use, def);		
 
-printf("SPU[%d] calculated\tin={", spu_num);
+D(printf("SPU[%d] calculated\tin={", spu_num);
 	for (int i = 0; i < 100; ++i){
 	if ( bitset_get_bit(in, i) ) {
 			printf("%d ", i);
 		}
 	}
-printf("}\n");
+printf("}\n");)
 
 		mfc_put(in, (unsigned int)  (param.bs_in_addr  +  offset), bitset_size, tag[0], 0, 0);
 		mfc_write_tag_mask(1<<tag[0]);
@@ -136,10 +124,6 @@ int main(unsigned long long id, unsigned long long parm)
     mfc_read_tag_status_all();
 
 
-unsigned int inbox = spu_read_in_mbox();
-printf("initial inbox: %u\n", inbox);
-
-
     int j;
     int tag_num = param.proc * 5;
     for(j = 0; j < param.proc*5+5; ++j){
@@ -150,8 +134,8 @@ printf("initial inbox: %u\n", inbox);
     bitset_size = param.bitset_size;
     bitset_subsets = param.bitset_subsets;
 
-	printf("SPU[%d] initiated, with tags{%d, %d, %d, %d, %d} &in==%p  &out==%p  &use==%p  &def==%p\n",
-           spu_num, tag[0], tag[1], tag[2], tag[3], tag[4], (void*)param.bs_in_addr, (void*)param.bs_out_addr, (void*)param.bs_use_addr, (void*)param.bs_def_addr);
+	D(printf("SPU[%d] initiated, with tags{%d, %d, %d, %d, %d} &in==%p  &out==%p  &use==%p  &def==%p\n",
+           spu_num, tag[0], tag[1], tag[2], tag[3], tag[4], (void*)param.bs_in_addr, (void*)param.bs_out_addr, (void*)param.bs_use_addr, (void*)param.bs_def_addr);)
 	
 	work();
 	
