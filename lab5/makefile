@@ -1,12 +1,3 @@
-NSYM	= 100
-NVERTEX	= 8
-MAXSUCC	= 4
-NACTIVE	= 10
-NSPUS = 1
-PRINT_OUTPUT=true
-PRINT_INPUT=true
-
-
 DIRS		:= spu
 PROGRAM_ppu	:= dataflow
 IMPORTS         = spu/lib_dataflow_spu.a -lspe2 -lpthread 
@@ -21,7 +12,7 @@ include $(CELL_TOP)/buildutils/make.footer
 
 #CFLAGS		= -O4 -Wall -pedantic -std=c99 -DTEST
 #CFLAGS		= -O4 -Wall -pedantic -std=c99
-CFLAGS		+= -maltivec -O0 -Wall -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=600 -g ${XTRACFLAGS}
+CFLAGS		+= -maltivec -O0 -Wall -pedantic -gdwarf-2 -std=c99 -Werror -D_XOPEN_SOURCE=600 -g ${XTRACFLAGS}
 
 OBJS	= driver.o error.o list.o rand.o
 

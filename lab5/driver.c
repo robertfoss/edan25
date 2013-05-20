@@ -12,7 +12,7 @@
 #include "list.h"
 #include "rand.h"
 
-#define D(x)
+#define D(x) 
 #define MSG(x)  x
 
 typedef struct{
@@ -120,12 +120,13 @@ void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
     conds[0] = u->cond;
     ++saved_locks;
     
-
+printf("acquire_locks: needed_locks==%u\n", needed_locks);
     tmp_list = succ_list;
 	while(tmp_list->next != tmp_list){
 		tmp_list = tmp_list->next;
         v = tmp_list->data;
         if(v != NULL){
+printf("acquire_locks: saved_locks==%u\n", saved_locks);
             mutexes[saved_locks] = v->mutex;
             conds[saved_locks] = v->cond;
             ++saved_locks;
@@ -136,8 +137,9 @@ void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
 		tmp_list = tmp_list->next;
         v = tmp_list->data;
         if(v != NULL){
-            mutexes[saved_locks] = v->mutex;
+printf("acquire_locks: saved_locks==%u\n", saved_locks);
             conds[saved_locks] = v->cond;
+            mutexes[saved_locks] = v->mutex;
             ++saved_locks;
         }
 	}
@@ -414,22 +416,14 @@ printf("bitset_get_bit(v->def, %d) = %d\n", sym, bitset_get_bit( &(def[v->index*
 					if(print_input){
 						printf(" u %d", sym);
 					}
-printf("setting %d in use[%d]\n", sym, v->index);
 					bitset_set_bit( &(use[v->index*bitset_subsets]), sym);//bitset_set_bit(v->use, sym, true);
 				}
 			}else{
-#define UNUSED(x) (void)(x)
-int idx = v->index*bitset_subsets;
-bool b = bitset_get_bit( &(use[v->index*bitset_subsets]), sym);
-UNUSED(idx);
-UNUSED(b);
-
 printf("bitset_get_bit(v->use, %d) = %d\n", sym, bitset_get_bit(&(use[v->index*bitset_subsets]), sym));
 				if(!bitset_get_bit( &(use[v->index*bitset_subsets]), sym)){//!bitset_get_bit(v->use, sym)){
 					if(print_input){
 						printf(" d %d", sym);
 					}
-printf("setting %d in def[%d]\n", sym, v->index);
 					bitset_set_bit( &(def[v->index*bitset_subsets]), sym);//bitset_set_bit(v->def, sym, true);
 				}
 			}
@@ -498,7 +492,6 @@ printf("}\n");)
         work_counter++;
 	}
     printf("Thread[%u] worked %u iterations.\n", index, work_counter);
-	spu_quit();
     return NULL;
 }
 
@@ -521,10 +514,8 @@ void spu_quit(){
 	printf("spu_quit()\n");
 	ppu_send_mail_t send;
 	send.vertex_index = UINT_MAX;
-	if(	pthread_mutex_trylock(&spu_quit_mutex)){
-		for(int i = 0; i < nspu; ++i){
-    		spe_in_mbox_write(data[i].ctx, &send.vertex_index, 1, 1);
-		}
+	for(int i = 0; i < nspu; ++i){
+		spe_in_mbox_write(data[i].ctx, &send.vertex_index, 1, 1);
 	}
 }
 
@@ -600,6 +591,7 @@ void liveness(list_t* vertex_list, int nthread){
         pthread_join(thread[i], NULL);
     }
 	end = sec();
+//	spu_quit();
     printf("c runtime = %f s\n", (end - begin));
 
 }
@@ -656,8 +648,8 @@ int main(int ac, char** av){
 	progname = av[0];
     int bits_per_uint = sizeof(unsigned int) * 8;
     int uints_per_bitset = (unsigned int) ( ( (float)(nsym) / (float)(bits_per_uint) ) + 1);
-    alloc_size = pad_length(sizeof(unsigned int) * uints_per_bitset);
-	bitset_subsets = uints_per_bitset;
+    alloc_size = pad_length(sizeof(unsigned int) * pad_length(uints_per_bitset));
+	bitset_subsets = pad_length(uints_per_bitset);
 
 	printf("nsym   = %zu\n", nsym);
 	printf("nvertex   = %zu\n", nvertex);
@@ -675,15 +667,11 @@ int main(int ac, char** av){
         insert_after(tmp_list, create_node(new_vertex(i)));
 		tmp_list = tmp_list->next;
 	}
-	void* tmp;
-    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
-	in = tmp;
-    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
-	out = tmp;
-    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
-	use = tmp;
-    posix_memalign(&tmp, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
-	def = tmp;
+
+    posix_memalign((void*) &in, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+    posix_memalign((void*) &out, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+    posix_memalign((void*) &use, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
+    posix_memalign((void*) &def, (size_t) ALIGN_CONSTANT, (size_t) alloc_size * nvertex);
     if(in == NULL || out == NULL || use == NULL || def == NULL){
         printf("posix_memalign returned null\n");
 		exit(1);
@@ -734,7 +722,6 @@ int main(int ac, char** av){
 			exit(1);
 		}
 	}
- 
 #endif
 	//
 	// Start liveness analysis

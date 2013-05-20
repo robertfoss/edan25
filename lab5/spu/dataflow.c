@@ -13,7 +13,7 @@
 #include "vertex.h"
 
 
-#define D(x)    x
+#define D(x) 
 
 
 param_t         param A16;
@@ -40,7 +40,7 @@ bool bitset_get_bit(unsigned int* arr, unsigned int bit){
 
 void work()
 {
-
+printf("SPU[%u] work()\n", spu_num);
 	unsigned int inbox, offset;
     unsigned int *in = malloc_align(bitset_size, ALIGN_EXP);
     unsigned int *out = malloc_align(bitset_size, ALIGN_EXP);
@@ -53,8 +53,15 @@ void work()
 
 	while(1) {
 		inbox = spu_read_in_mbox();
+
+        if(inbox == UINT_MAX)
+        {
+            printf("SPU[%u] received exit signal.. exiting.\n", spu_num);
+            return;
+        }
 		
 		offset = bitset_subsets*inbox;
+
 		mfc_get(in,  (unsigned int) (param.bs_in_addr  + offset), bitset_size, tag[0], 0, 0);
 		mfc_get(out, (unsigned int) (param.bs_out_addr + offset), bitset_size, tag[1], 0, 0);
 		mfc_get(use, (unsigned int) (param.bs_use_addr + offset), bitset_size, tag[2], 0, 0);
@@ -119,7 +126,7 @@ int main(unsigned long long id, unsigned long long parm)
 {
 
     id = id;
-    mfc_get((void *) &param, (unsigned int) parm, sizeof(param_t), 1, 0, 0);
+    mfc_get((void*) &param, (unsigned int) parm, sizeof(param_t), 1, 0, 0);
     mfc_write_tag_mask(1<<1);
     mfc_read_tag_status_all();
 
@@ -134,8 +141,9 @@ int main(unsigned long long id, unsigned long long parm)
     bitset_size = param.bitset_size;
     bitset_subsets = param.bitset_subsets;
 
-	D(printf("SPU[%d] initiated, with tags{%d, %d, %d, %d, %d} &in==%p  &out==%p  &use==%p  &def==%p\n",
-           spu_num, tag[0], tag[1], tag[2], tag[3], tag[4], (void*)param.bs_in_addr, (void*)param.bs_out_addr, (void*)param.bs_use_addr, (void*)param.bs_def_addr);)
+	printf("SPU[%d] initiated, with tags{%d, %d, %d, %d, %d} bitset_size==%u  bitset_subsets==%u  " \
+           "&in==%p  &out==%p  &use==%p  &def==%p\n",
+           spu_num, tag[0], tag[1], tag[2], tag[3], tag[4], bitset_size, bitset_subsets, (void*)param.bs_in_addr, (void*)param.bs_out_addr, (void*)param.bs_use_addr, (void*)param.bs_def_addr);
 	
 	work();
 	
