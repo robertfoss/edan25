@@ -14,6 +14,7 @@
 
 #define D(x) 
 #define MSG(x)  x
+#define UNUSED(x) (void)(x)
 
 typedef struct{
 	spe_context_ptr_t	ctx;
@@ -35,8 +36,8 @@ extern spe_program_handle_t dataflow;
 
 bool print_input;
 int nvertex;
+int	nthread;
 int	nsym;
-int nspu;
 unsigned int alloc_size;
 unsigned int bitset_subsets;
 arg_t   data[MAX_SPUS];
@@ -45,17 +46,13 @@ char*		progname;
 
 unsigned int *in, *out, *use, *def;
 
-pthread_mutex_t spu_quit_mutex;
-pthread_mutex_t spu_round_robin_mutex;
-int spu_round_robin = 0;
 
-
-void bitset_megaop(unsigned int vertex_index);
-void spu_bitset_megaop(unsigned int vertex_index);
+void bitset_megaop(unsigned int vertex_index, unsigned int thread_index);
+void spu_bitset_megaop(unsigned int vertex_index, unsigned int thread_index);
 #ifdef USE_CELL
-void (*bitset_megaop_ptr)(unsigned int) = &spu_bitset_megaop;
+void (*bitset_megaop_ptr)(unsigned int, unsigned int) = &spu_bitset_megaop;
 #else
-void (*bitset_megaop_ptr)(unsigned int) = &bitset_megaop;
+void (*bitset_megaop_ptr)(unsigned int, unsigned int) = &bitset_megaop;
 #endif
 
 static double sec(void){
@@ -120,13 +117,11 @@ void acquire_locks(Vertex* u, list_t* succ_list, list_t* pred_list){
     conds[0] = u->cond;
     ++saved_locks;
     
-printf("acquire_locks: needed_locks==%u\n", needed_locks);
     tmp_list = succ_list;
 	while(tmp_list->next != tmp_list){
 		tmp_list = tmp_list->next;
         v = tmp_list->data;
         if(v != NULL){
-printf("acquire_locks: saved_locks==%u\n", saved_locks);
             mutexes[saved_locks] = v->mutex;
             conds[saved_locks] = v->cond;
             ++saved_locks;
@@ -137,7 +132,6 @@ printf("acquire_locks: saved_locks==%u\n", saved_locks);
 		tmp_list = tmp_list->next;
         v = tmp_list->data;
         if(v != NULL){
-printf("acquire_locks: saved_locks==%u\n", saved_locks);
             conds[saved_locks] = v->cond;
             mutexes[saved_locks] = v->mutex;
             ++saved_locks;
@@ -252,8 +246,9 @@ bool bitset_get_bit(unsigned int* arr, unsigned int bit){
 }
 
 
-void bitset_megaop(unsigned int vertex_index){
+void bitset_megaop(unsigned int vertex_index, unsigned int thread_index){
     unsigned int tmp = vertex_index*bitset_subsets;
+    UNUSED(thread_index);
     for(unsigned int i = 0; i < bitset_subsets; ++i) {
         in[tmp + i]  = out[tmp + i];
 		in[tmp + i]  = in[tmp + i] & (~(in[tmp + i] & def[tmp + i]));
@@ -261,7 +256,7 @@ void bitset_megaop(unsigned int vertex_index){
     }
 }
 
-void computeIn(Vertex* u, list_t* worklist){
+void computeIn(Vertex* u, list_t* worklist, unsigned int thread_index){
 	Vertex* v;
     acquire_locks(u, u->succ_list, u->pred_list);
 
@@ -275,16 +270,9 @@ void computeIn(Vertex* u, list_t* worklist){
 	} while(tmp_list->next != tmp_list);
 
 	unsigned int* old = bitset_copy(&(in[u->index*bitset_subsets]));
-	bitset_megaop_ptr(u->index);
+	bitset_megaop_ptr(u->index, thread_index);
 
 
-/*  THIS CODE DOES NOT WORK
-	// TODO: No need to set to zero if the gpu just starts with  in = (0 | out) = out.. instead
-	memset( &(in[u->index*bitset_subsets]), '0', alloc_size);
-	bitset_or( &(in[u->index*bitset_subsets]), &(out[u->index*bitset_subsets]));
-	bitset_and_not( &(in[u->index*bitset_subsets]), &(def[u->index*bitset_subsets]));
-	bitset_or( &(in[u->index*bitset_subsets]), &(use[u->index*bitset_subsets]));
-*/
 	if(!bitset_equals( &(in[u->index*bitset_subsets]), old)){
 		tmp_list = u->pred_list;
 		do{
@@ -316,7 +304,6 @@ void print_vertex(Vertex* v){
 
 	for (i = 0; i < nsym; ++i){
 	if ( bitset_get_bit( &(def[v->index*bitset_subsets]), i) ) {
-//		if (bitset_get_bit(v->def, i)){
 			printf("%d ", i);
 		}
 	}
@@ -325,7 +312,6 @@ void print_vertex(Vertex* v){
 
 	for (i = 0; i < nsym; ++i){
 	if ( bitset_get_bit( &(in[v->index*bitset_subsets]), i) ) {
-//		if (bitset_get_bit(v->in, i)){
 			printf("%d ", i);
 		}
 	}
@@ -334,7 +320,6 @@ void print_vertex(Vertex* v){
 
 	for (i = 0; i < nsym; ++i){
 		if ( bitset_get_bit( &(out[v->index*bitset_subsets]), i) ) {
-//		if (bitset_get_bit(v->out, i)){
 			printf("%d ", i);
 		}
 	}
@@ -395,7 +380,6 @@ void generateCFG(list_t* vertex_list, int maxsucc, Random* r){
 
 
 void generateUseDef(list_t* vertex_list, int nsym, int nactive, Random* r){
-    //printf("in generateUseDef\n");
 	int j;
 	int sym;
 	list_t* tmp_list = vertex_list;
@@ -479,7 +463,7 @@ printf("Iteration #%d has\tin (%p)={", work_counter, (void*)&(in[u->index*bitset
 	}
 printf("}\n");)
 		u->listed = false;
-		computeIn(u, worklist);
+		computeIn(u, worklist, index);
 
 D(printf("Iteration #%d returned\tin={", work_counter);
 	for (int i = 0; i < nsym; ++i){
@@ -514,34 +498,29 @@ void spu_quit(){
 	printf("spu_quit()\n");
 	ppu_send_mail_t send;
 	send.vertex_index = UINT_MAX;
-	for(int i = 0; i < nspu; ++i){
+	for(int i = 0; i < nthread; ++i){
 		spe_in_mbox_write(data[i].ctx, &send.vertex_index, 1, 1);
 	}
 }
 
-void spu_bitset_megaop(unsigned int vertex_index){
+void spu_bitset_megaop(unsigned int vertex_index, unsigned int thread_index){
 	ppu_send_mail_t send;
 	spu_send_mail_t recv;
 
 	recv.op_completed = UINT_MAX;
 
 	// Select which SPU to use.
-	pthread_mutex_lock(&spu_round_robin_mutex);
-	spe_context_ptr_t context = data[spu_round_robin++].ctx;
-	if(spu_round_robin >= nspu){
-		spu_round_robin = 0;
-	}
-	pthread_mutex_unlock(&spu_round_robin_mutex);
+	spe_context_ptr_t context = data[thread_index].ctx;
 	
-	MSG(printf("spu_bitset_megaop() sending msg #%u\n", vertex_index);)
+	MSG(printf("spu_bitset_megaop() PPU[%u]->SPU[%u] sending msg #%u\n", thread_index, thread_index, vertex_index);)
 	send.vertex_index = vertex_index;
     spe_in_mbox_write(context, &send.vertex_index, 1, 1);
 
 	// Block until bitset has been completed
     while (recv.op_completed != vertex_index) {
-		MSG(printf("spu_bitset_megaop() waiting for message..\n");)
+		MSG(printf("spu_bitset_megaop() PPU[%u]<-SPU[%u] waiting for reply #%u..\n", thread_index, thread_index, vertex_index);)
 		spe_out_intr_mbox_read(context, &recv.op_completed, 1, SPE_MBOX_ALL_BLOCKING);
-		MSG(printf("spu_bitset_megaop() received message #%u\n", recv.op_completed);)
+		MSG(printf("spu_bitset_megaop() PPU[%u]<-SPU[%u] received message #%u \n", thread_index, thread_index, recv.op_completed);)
 
 	}
 }
@@ -601,7 +580,6 @@ int main(int ac, char** av){
 	int	i;
 	int	maxsucc;
 	int	nactive;
-	int	nthread;
 	bool print_output; 
 	list_t* vertex;
 	Random* r = new_random();
@@ -610,38 +588,36 @@ int main(int ac, char** av){
 	setSeed(r, 1);
 	vertex = create_node(NULL); //First element = NULL
 
-    if (ac == 9){
+    if (ac == 8){
 	    sscanf(av[1], "%d", &nsym);
 	    sscanf(av[2], "%d", &nvertex);
 	    sscanf(av[3], "%d", &maxsucc);
 	    sscanf(av[4], "%d", &nactive);
 	    sscanf(av[5], "%d", &nthread);
-	    sscanf(av[6], "%d", &nspu);
-        if(nspu < 1 || nspu > 6){
-            nspu = 6;
+        if(nthread < 1 || nthread > 6){
+            nthread = 6;
         }
 	    char* tmp_string = "";
-        tmp_string = av[7];
+        tmp_string = av[6];
 	    if(tolower(tmp_string[0]) == 't'){
 		    print_output = true;
 	    }else{
 		    print_output = false;
 	    }
 
-        tmp_string = av[8];
+        tmp_string = av[7];
 	    if(tolower(tmp_string[0]) == 't'){
 		    print_input = true;
 	    }else{
 		    print_input = false;
 	    }
     } else {
-	    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads nspu print_output print_input).\nAssuming sane defaults.\n");
+	    printf("\nWrong # of args (nsym nvertex maxsucc nactive nthreads print_output print_input).\nAssuming sane defaults.\n");
         nsym = 100;
         nvertex = 8;
         maxsucc = 4;
         nactive = 10;
         nthread = 1;
-        nspu = 6;
         print_output = true;
 	    print_input = false;
     }
@@ -690,11 +666,9 @@ int main(int ac, char** av){
 	//
 	// Create SPU context and SPU-managing threads
 #ifdef USE_CELL
-    param_t param[nspu] A16;
-	pthread_mutex_init(&spu_round_robin_mutex, NULL);
-	pthread_mutex_init(&spu_quit_mutex, NULL);
+    param_t param[nthread] A16;
 
-	for (int i = 0; i < nspu; ++i) {
+	for (int i = 0; i < nthread; ++i) {
 		printf("Setting SPU params\n");
 		data[i].spu_num = param[i].proc = i;
 		param[i].nvertex = nvertex;
