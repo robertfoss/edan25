@@ -63,23 +63,46 @@ static double sec(void){
 
 inline
 unsigned int pad_length(unsigned int input){
-/*    if(input<=1)
-        return 1;
-    if(input<=2)
-        return 2;
-    if(input<=4)
-        return 4;
-    if(input<=8)
-        return 8;
-    if(input<=16)
-        return 16;
-*/
     unsigned int mod = input % 16;
     if(mod == 0){
         return input;
     } else {
         return input + 16 - mod;
     }
+}
+
+void print_stop_reason(spe_stop_info_t stopinfo)
+{
+
+    switch(stopinfo.stop_reason)
+    {
+    case SPE_EXIT: printf("SPE_EXIT"); break;
+    case SPE_STOP_AND_SIGNAL:
+        printf("SPE_STOP_AND_SIGNAL");
+        int low14_mask = 0x3FFF;
+        int masked_val = stopinfo.result.spe_signal_code & low14_mask;
+        printf(", StopAndSignal code: %x\tSignal nbr: %x", stopinfo.result.spe_signal_code, masked_val);
+        if(masked_val == 0){
+            printf(" Invalid instructions runtime error");        
+        } else if(0x2000 <= masked_val && masked_val <= 0x20FF){
+            printf(" Exit event");
+        } else if (0x2100 <= masked_val && masked_val <= 0x21FF){
+            printf(" Callback event");
+        } else if (0x0001 <= masked_val && masked_val <= 0x1FFF){
+            printf(" User defined event");
+        } else {
+            printf(" Undefined event type");
+        }
+        break;
+    case SPE_RUNTIME_ERROR: printf("SPE_RUNTIME_ERROR"); break;
+    case SPE_RUNTIME_EXCEPTION: printf("SPE_RUNTIME_EXCEPTION"); break;
+    case SPE_RUNTIME_FATAL: printf("SPE_RUNTIME_FATAL"); break;
+    case SPE_CALLBACK_ERROR: printf("SPE_CALLBACK_ERROR"); break;
+    case SPE_ISOLATION_ERROR: printf("SPE_ISOLATION_ERROR"); break;
+    default: break;
+    }
+    printf("\n");
+
 }
 
 Vertex* new_vertex(int i){
@@ -483,13 +506,14 @@ void* spu_init(void *arg)
 {
 	arg_t* data = arg;
 	unsigned int entry = SPE_DEFAULT_ENTRY;
+    spe_stop_info_t stopinfo;
     printf("PPU thread #%d, Starting SPU[%d] context.\n", data->spu_num, data->spu_num);
-	if (spe_context_run(data->ctx, &entry, 0, data->arg, NULL, NULL) < 0) {
+	if (spe_context_run(data->ctx, &entry, 0, data->arg, NULL, &stopinfo) < 0) {
 		perror("Failed running context");
 		exit (1);
 	}
-	printf("PPU thread #%d sees that SPU[%u] has terminated.\n", data->spu_num, data->spu_num);
-
+	printf("PPU thread #%d sees that SPU[%u] has terminated with code ", data->spu_num, data->spu_num);
+    print_stop_reason(stopinfo);
 
 	pthread_exit(NULL);  
 }
